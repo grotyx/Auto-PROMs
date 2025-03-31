@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  auto-proms-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: auto-proms-psm
+    container_name: auto-proms-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./input_pdfs:/app/input_pdfs
+      - ./output_csv:/app/output_csv
+      - ./logs:/app/logs
+      - ./.env:/app/.env
+    environment:
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+    restart: unless-stopped
