@@ -1,0 +1,37 @@
+# 민감한 정보
+.env
+config.json
+
+# Python 가상 환경
+.venv/
+env/
+venv/
+ENV/
+
+# Python 캐시 파일
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 로그 파일
+logs/
+*.log
+
+# 임시 파일들
+temp_images/
+
+# 입출력 데이터
+input_pdfs/*
+output_csv/*
+!input_pdfs/.gitkeep
+!output_csv/.gitkeep
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+
+# IDE 파일
+.idea/
+.vscode/
+*.swp
+*.swo
