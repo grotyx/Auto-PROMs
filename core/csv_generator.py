@@ -50,21 +50,12 @@ class CSVGenerator:
             for col in self.columns:
                 if col not in df.columns:
                     df[col] = None
-                    
-            # le_vas_lt가 없으면 None으로 설정
-            if 'le_vas_lt' not in df.columns:
-                df['le_vas_lt'] = None
-                
-            # eq5d_value가 없으면 None으로 설정
-            if 'eq5d_value' not in df.columns:
-                df['eq5d_value'] = None
-            
+
             # 열 순서 조정
             df = df[self.columns]
             
             # 데이터 타입 변환
             df['rc_id'] = df['rc_id'].astype('Int64')
-            #df['visit_day'] = pd.to_datetime(df['visit_day']).dt.strftime('%Y-%m-%d')
             df['visit_day'] = pd.to_datetime(df['visit_day'], format='mixed', errors='coerce').dt.strftime('%Y-%m-%d')
 
             # CSV 저장

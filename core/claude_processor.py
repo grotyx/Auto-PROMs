@@ -1,13 +1,6 @@
-import json
-import re
-import logging
-from typing import Dict
-
-import numpy as np
 from anthropic import Anthropic
 
 from .base_processor import BaseProcessor
-from .validators import SurveyValidator
 
 
 class ClaudeProcessor(BaseProcessor):
@@ -55,50 +48,3 @@ class ClaudeProcessor(BaseProcessor):
             return response.content[0].text
         return response.content
 
-    # ------------------------------------------------------------------
-    # Single image processing (used by GUI for single-page testing)
-    # ------------------------------------------------------------------
-
-    def process_single_image(self, image_array: np.ndarray, page_index: int) -> Dict:
-        """Process a single image (called directly from the GUI)."""
-        try:
-            if str(page_index) not in self.page_instructions:
-                self.logger.error(f"Invalid page index: {page_index}")
-                return {"error": f"Invalid page index: {page_index}"}
-
-            encoded_image = self.encode_image(image_array)
-
-            # Call the Claude API
-            content = self._call_api(encoded_image, page_index)
-
-            # JSON parsing
-            try:
-                page_data = json.loads(content)
-            except json.JSONDecodeError:
-                json_match = re.search(r'\{.*\}', content, re.DOTALL)
-                if json_match:
-                    try:
-                        page_data = json.loads(json_match.group())
-                    except json.JSONDecodeError:
-                        self.logger.error("Failed to parse JSON even after regex")
-                        self.logger.error(f"Extracted content: {json_match.group()}")
-                        return {"error": "Failed to parse response JSON"}
-                else:
-                    self.logger.error("No JSON-like content found in response")
-                    self.logger.error(f"Full response: {content}")
-                    return {"error": "No valid JSON in response"}
-
-            if isinstance(page_data, dict) and "error" in page_data:
-                self.logger.warning(f"API returned error: {page_data['error']}")
-                return page_data
-
-            page_data = SurveyValidator.validate_page_data(
-                page_index, page_data, self.logger
-            )
-
-            self.logger.info(f"Successfully processed single image. Extracted data: {page_data}")
-            return page_data
-
-        except Exception as e:
-            self.logger.error(f"Error processing single image: {e}")
-            return {"error": f"Processing failed: {e}"}

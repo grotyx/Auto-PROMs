@@ -192,18 +192,3 @@ class PDFProcessor:
             self.logger.error(f"Error getting page count: {str(e)}")
             return 0
     
-    def get_pdf_info(self) -> dict:
-        """PDF 정보 반환"""
-        try:
-            doc = fitz.open(self.pdf_path)
-            info = {
-                'pages': len(doc),
-                'metadata': doc.metadata,
-                'encrypted': doc.is_encrypted,
-                'pdf_version': doc.pdf_version()
-            }
-            doc.close()
-            return info
-        except Exception as e:
-            self.logger.error(f"Error getting PDF info: {str(e)}")
-            return {'pages': 0, 'error': str(e)}
