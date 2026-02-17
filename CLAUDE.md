@@ -70,7 +70,7 @@ PDF (6 pages = 1 survey)
   ↓ PDFProcessor (PyMuPDF, 300 DPI)
 Image[]
   ↓ BaseProcessor.process_images()
-  ↓   → concurrent: ThreadPoolExecutor (max_workers=3)
+  ↓   → concurrent: ThreadPoolExecutor (max_workers=6)
   ↓   → sequential: fallback
   ↓ _call_api() → Claude / OpenAI Vision API
 JSON responses
@@ -147,7 +147,7 @@ OPENAI_API_KEY=sk-proj-xxx
     "max_tokens": 2000,
     "temperature": 0,
     "concurrent_enabled": true,
-    "max_concurrent_requests": 3
+    "max_concurrent_requests": 6
   },
   "output": {
     "csv_filename": "spine_survey_results.csv",
