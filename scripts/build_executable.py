@@ -20,12 +20,12 @@ APP_NAME = "AutoSpineSurvey"
 DATA_FILES = [
     ("data/page_instruction.json", "data"),
     ("data/eq5d_value_k.csv", "data"),
-    ("config_template.json", "."),
+    ("config.json", "."),
     (".env.example", "."),
 ]
 
 # Files that must NEVER be included in builds (contain user data)
-EXCLUDED_FILES = [".env", "config.json"]
+EXCLUDED_FILES = [".env"]
 
 HIDDEN_IMPORTS = [
     "cv2",
@@ -242,38 +242,10 @@ def create_portable_package() -> bool:
         return False
     shutil.copy2(exe_source, package_dir)
 
-    # Copy config_template.json as config.json (no API keys)
-    template_path = root / "config_template.json"
-    if template_path.exists():
-        shutil.copy2(template_path, package_dir / "config.json")
-    else:
-        config = {
-            "api_settings": {
-                "provider": "claude",
-                "openai_model": "gpt-5-mini",
-                "claude_model": "claude-haiku-4-5-20251001",
-            },
-            "folders": {
-                "input_folder": "input_pdfs",
-                "output_folder": "output_csv",
-                "temp_folder": "temp_images",
-                "logs_folder": "logs",
-            },
-            "processing": {
-                "pages_per_survey": 6,
-                "max_tokens": 2000,
-                "temperature": 0,
-                "concurrent_enabled": True,
-                "max_concurrent_requests": 3,
-            },
-            "output": {
-                "csv_filename": "spine_survey_results.csv",
-                "include_timestamps": True,
-                "backup_results": True,
-            },
-        }
-        with open(package_dir / "config.json", "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=4, ensure_ascii=False)
+    # Copy config.json (no API keys — keys are in .env only)
+    config_path = root / "config.json"
+    if config_path.exists():
+        shutil.copy2(config_path, package_dir / "config.json")
 
     # Copy .env.example
     env_example = root / ".env.example"

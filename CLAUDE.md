@@ -34,8 +34,7 @@ Auto_PROMs_PSM_4_GUI/
 ├── README.md
 ├── CLAUDE.md
 ├── requirements.txt
-├── config.json               # Runtime settings, NO API keys (git-ignored)
-├── config_template.json      # Config template (committed)
+├── config.json               # Runtime settings, NO API keys (tracked)
 ├── .env                      # API keys only (git-ignored)
 ├── .env.example              # API key template (committed)
 │
@@ -128,7 +127,7 @@ CLAUDE_API_KEY=sk-ant-xxx
 OPENAI_API_KEY=sk-proj-xxx
 ```
 
-### config.json (runtime settings, git-ignored)
+### config.json (runtime settings, tracked in git)
 ```json
 {
   "api_settings": {
@@ -168,8 +167,8 @@ OPENAI_API_KEY=sk-proj-xxx
 
 - `scripts/build_executable.py` generates `.spec` dynamically — do NOT pass `--onefile`, `--windowed`, `--name` to PyInstaller
 - CustomTkinter resources are auto-bundled via `get_ctk_data_path()`
-- `.env` and `config.json` are excluded from builds; `config_template.json` is included
-- Portable package includes `config.json` (from template), `.env.example`, `data/` files
+- `.env` is excluded from builds; `config.json` is bundled directly
+- Portable package includes `config.json`, `.env.example`, `data/` files
 
 ## Platform Notes
 

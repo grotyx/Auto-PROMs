@@ -73,9 +73,8 @@ venv.bak/
 
 # Application specific
 # --------------------
-# API Keys and sensitive config (DO NOT COMMIT)
+# API Keys (DO NOT COMMIT)
 .env
-config.json
 
 # Input/Output folders (contain user data)
 input_pdfs/*.pdf
@@ -133,9 +132,8 @@ $RECYCLE.BIN/
 
 # ============================================================================
 # Notes:
-# - config.json is ignored to prevent accidental API key commits
-# - Use config_template.json as a template for new setups
-# - API keys belong in .env (also ignored)
+# - config.json is tracked (no API keys; keys are in .env only)
+# - API keys belong in .env (ignored)
 # - PDF files and CSV outputs are ignored as they contain user data
 # - Logs are ignored but the logs/ folder structure is preserved
 # ============================================================================
