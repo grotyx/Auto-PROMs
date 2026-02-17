@@ -39,7 +39,6 @@ CLAUDE_API_KEY=sk-ant-your-key-here
 OPENAI_API_KEY=sk-proj-your-key-here
 ```
 
-On first run, `config_template.json` is copied to `config.json` automatically.
 Default provider is Claude. To switch provider, edit `config.json`:
 ```json
 {
@@ -96,7 +95,7 @@ Output:
 ```
 AutoSpineSurvey_Portable/
 ├── AutoSpineSurvey(.exe)
-├── config.json              # Template config (no API keys)
+├── config.json              # Settings (no API keys)
 ├── .env.example             # API key template
 ├── data/
 │   ├── page_instruction.json
@@ -116,7 +115,6 @@ Auto_PROMs_PSM_4_GUI/
 ├── main_gui.py               # GUI entry point
 ├── README.md
 ├── requirements.txt
-├── config_template.json      # Config template (committed)
 ├── .env.example              # API key template (committed)
 │
 ├── core/                     # Processing modules

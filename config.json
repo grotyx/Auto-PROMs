@@ -14,8 +14,8 @@
         "pages_per_survey": 6,
         "max_tokens": 2000,
         "temperature": 0.0,
-        "max_concurrent_requests": 6,
-        "concurrent_enabled": true
+        "concurrent_enabled": true,
+        "max_concurrent_requests": 6
     },
     "output": {
         "csv_filename": "spine_survey_results.csv",
