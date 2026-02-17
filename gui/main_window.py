@@ -9,22 +9,11 @@ import os
 import sys
 import threading
 import queue
-import platform
 from datetime import datetime
-from pathlib import Path
 
 from core.config import ConfigManager
 
-from .widgets import DropZone, FileCard, LogPanel, FONT_FAMILY, STATUS_ICONS
-
-# tkinterdnd2 import attempt
-try:
-    from tkinterdnd2 import TkinterDnD, DND_FILES
-    HAS_DND = True
-except Exception:
-    HAS_DND = False
-    TkinterDnD = None
-    DND_FILES = None
+from .widgets import DropZone, FileCard, LogPanel, FONT_FAMILY
 
 
 class MainWindow:

@@ -8,8 +8,6 @@ import customtkinter as ctk
 from tkinter import messagebox, filedialog
 import json
 import os
-import sys
-from pathlib import Path
 
 from dotenv import load_dotenv
 

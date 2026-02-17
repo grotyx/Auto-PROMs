@@ -254,19 +254,3 @@ def load_config() -> 'ConfigManager':
         _config_manager = ConfigManager()
     return _config_manager
 
-def reset_config():
-    """설정 관리자 초기화 (재로드용)"""
-    global _config_manager
-    _config_manager = None
-
-def get_api_key() -> str:
-    """API 키 반환"""
-    return load_config().get_api_key()
-
-def get_model() -> str:
-    """모델명 반환"""
-    return load_config().get_model()
-
-def get_provider() -> str:
-    """API 제공자 반환"""
-    return load_config().get_provider()

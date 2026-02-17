@@ -3,7 +3,6 @@ import json
 import logging
 import re
 import threading
-import time
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -380,38 +379,6 @@ class BaseProcessor(ABC):
         all_data.update(self._completion_flags())
         self.logger.info(f"Final processed data (concurrent): {all_data}")
         return all_data
-
-    # Also expose as the public method name requested in the spec
-    def process_pages_concurrent(
-        self,
-        visit_images: List[Tuple[int, np.ndarray]],
-        max_workers: int = 3,
-        progress_callback: Optional[Callable] = None,
-    ) -> Dict:
-        """Process 6 pages of a survey concurrently via ThreadPoolExecutor.
-
-        This is a convenience wrapper that temporarily overrides
-        max_workers and delegates to ``_process_visit_concurrent``.
-
-        Args:
-            visit_images: List of (page_num, image) tuples.
-            max_workers: Max concurrent API calls (default 3).
-            progress_callback: Optional callback(page_num, total_pages)
-                called after each page completes.
-
-        Returns:
-            Merged results from all pages with completion flags.
-        """
-        saved = self._max_workers
-        self._max_workers = max(1, min(6, max_workers))
-        self._rate_limiter = SimpleRateLimiter(self._max_workers)
-        try:
-            return self._process_visit_concurrent(
-                visit_images, progress_callback
-            )
-        finally:
-            self._max_workers = saved
-            self._rate_limiter = SimpleRateLimiter(saved)
 
     @staticmethod
     def _completion_flags() -> Dict:
