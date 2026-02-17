@@ -34,7 +34,7 @@ DEFAULT_CONFIG = {
         "max_tokens": 2000,
         "temperature": 0,
         "concurrent_enabled": True,
-        "max_concurrent_requests": 3
+        "max_concurrent_requests": 6
     },
     "output": {
         "csv_filename": "spine_survey_results.csv",

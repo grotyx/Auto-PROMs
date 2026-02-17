@@ -164,7 +164,7 @@ Auto_PROMs_PSM_4_GUI/
         "max_tokens": 2000,
         "temperature": 0,
         "concurrent_enabled": true,
-        "max_concurrent_requests": 3
+        "max_concurrent_requests": 6
     },
     "output": {
         "csv_filename": "spine_survey_results.csv",
@@ -199,7 +199,7 @@ Detailed logs: `logs/spine_survey_*.log`
 ### v2.0
 - Security: API keys moved to `.env` file (python-dotenv)
 - Architecture: Abstract base processor class, validators module, EQ-5D caching
-- Performance: Concurrent page processing (ThreadPoolExecutor, max 3 workers)
+- Performance: Concurrent page processing (ThreadPoolExecutor, max 6 workers)
 - GUI: Rewritten with CustomTkinter (dark/light mode, collapsible log panel)
 - Build: PyInstaller build script
 
