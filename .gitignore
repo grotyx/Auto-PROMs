@@ -1,37 +1,141 @@
-# 민감한 정보
-.env
-config.json
+# ============================================================================
+# Auto Spine Survey v2.0 - Git Ignore Rules
+# ============================================================================
 
-# Python 가상 환경
-.venv/
-env/
-venv/
-ENV/
-
-# Python 캐시 파일
+# Python
+# -------
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# 로그 파일
-logs/
-*.log
+# PyInstaller
+# -----------
+*.manifest
+*.spec
 
-# 임시 파일들
-temp_images/
+# Installer logs
+# ---------------
+pip-log.txt
+pip-delete-this-directory.txt
 
-# 입출력 데이터
-input_pdfs/*
-output_csv/*
-!input_pdfs/.gitkeep
-!output_csv/.gitkeep
+# Unit test / coverage reports
+# ----------------------------
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
 
-# OS 생성 파일
-.DS_Store
-Thumbs.db
+# Virtual environments
+# --------------------
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# IDE 파일
-.idea/
+# IDE & Editor files
+# ------------------
 .vscode/
+.idea/
+.claude/
 *.swp
 *.swo
+*~
+
+# Application specific
+# --------------------
+# API Keys and sensitive config (DO NOT COMMIT)
+.env
+config.json
+
+# Input/Output folders (contain user data)
+input_pdfs/*.pdf
+output_csv/*.csv
+logs/*.log
+temp_images/*
+
+# Keep folder structure but ignore contents
+!input_pdfs/.gitkeep
+!output_csv/.gitkeep
+!temp_images/.gitkeep
+!logs/.gitkeep
+
+# Build artifacts & portable packages
+# ------------------------------------
+dist/
+build/
+*.egg-info/
+AutoSpineSurvey_Portable/
+SpineSurveyProcessor_Portable/
+
+# CustomTkinter cache
+# -------------------
+customtkinter/__pycache__/
+
+# Jupyter Notebook
+# ----------------
+.ipynb_checkpoints
+
+# macOS
+# -----
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+# -------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+# -----
+.fuse_hidden*
+.directory
+.Trash-*
+
+# Backup files
+# ------------
+*.bak
+*.backup
+*.tmp
+*_backup.*
+
+# ============================================================================
+# Notes:
+# - config.json is ignored to prevent accidental API key commits
+# - Use config_template.json as a template for new setups
+# - API keys belong in .env (also ignored)
+# - PDF files and CSV outputs are ignored as they contain user data
+# - Logs are ignored but the logs/ folder structure is preserved
+# ============================================================================
