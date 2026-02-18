@@ -1,4 +1,4 @@
-# Auto Spine Survey v2.1
+# Auto Spine Survey v2.1.1
 
 AI-powered spine surgery PROMs (Patient-Reported Outcome Measures) PDF data extraction system.
 
@@ -39,26 +39,18 @@ CLAUDE_API_KEY=sk-ant-your-key-here
 OPENAI_API_KEY=sk-proj-your-key-here
 ```
 
-On first run, `config_template.json` is copied to `config.json` automatically.
-Default provider is Claude. To switch provider, edit `config.json`:
-```json
-{
-    "api_settings": {
-        "provider": "claude"
-    }
-}
-```
-
 ### 3. Run
 
 ```bash
-python main_gui.py
+python app.py
 ```
 
 ## Features
 
-- **Modern GUI** — CustomTkinter with dark/light mode toggle
-- **Drag-and-drop** — Drop PDF files directly (Windows); click to select (all platforms)
+- **Native desktop window** — NiceGUI + pywebview (no browser needed)
+- **Modern UI** — "Refreshing Summer Fun" color scheme with card-based layout
+- **Click to select** — PDF file picker via native OS dialog
+- **Drag-and-drop** — Drop PDF files directly onto the upload zone
 - **Concurrent processing** — Parallel page API calls via ThreadPoolExecutor
 - **Dual AI support** — Switch between Claude (default) and OpenAI at runtime
 - **EQ-5D value calculation** — Automatic lookup from Korean value set table
@@ -66,8 +58,8 @@ python main_gui.py
 
 ## Usage
 
-1. Run `python main_gui.py`
-2. Drag PDF files onto the drop zone (or click to select)
+1. Run `python app.py`
+2. Click the upload zone or drag-and-drop PDF files
 3. Click "처리 시작" (Start Processing)
 4. Results saved to `output_csv/`
 
@@ -82,41 +74,15 @@ Each survey PDF contains **6 pages** per patient visit:
 
 Multi-survey PDFs are automatically split into 6-page segments.
 
-## Building Executable
-
-```bash
-python scripts/build_executable.py
-```
-
-Output:
-- `dist/AutoSpineSurvey` (or `.exe` on Windows)
-- `AutoSpineSurvey_Portable/` — ready-to-distribute package
-
-### Portable Package Contents
-```
-AutoSpineSurvey_Portable/
-├── AutoSpineSurvey(.exe)
-├── config.json              # Template config (no API keys)
-├── .env.example             # API key template
-├── data/
-│   ├── page_instruction.json
-│   └── eq5d_value_k.csv
-├── input_pdfs/
-├── output_csv/
-├── logs/
-└── README.txt
-```
-
-> **Note**: Users must create their own `.env` with API keys. The portable package never includes secrets.
-
 ## Project Structure
 
 ```
 Auto_PROMs_PSM_4_GUI/
-├── main_gui.py               # GUI entry point
+├── app.py                    # Entry point: ui.run(native=True)
 ├── README.md
 ├── requirements.txt
-├── config_template.json      # Config template (committed)
+├── config.json               # Runtime settings (no API keys)
+├── .env                      # API keys only (git-ignored)
 ├── .env.example              # API key template (committed)
 │
 ├── core/                     # Processing modules
@@ -129,10 +95,11 @@ Auto_PROMs_PSM_4_GUI/
 │   ├── pdf_processor.py      # PDF → image conversion (PyMuPDF)
 │   └── csv_generator.py      # CSV output generation
 │
-├── gui/                      # GUI modules
-│   ├── main_window.py        # CustomTkinter main window
-│   ├── settings_dialog.py    # Settings dialog (tabs, .env management)
-│   └── widgets.py            # FileCard, LogPanel, DropZone
+├── gui_ng/                   # NiceGUI-based GUI modules
+│   ├── __init__.py
+│   ├── styles.css            # CSS variables + component styles
+│   ├── main_page.py          # Main UI + background pipeline
+│   └── settings.py           # Settings dialog (4 tabs)
 │
 ├── data/                     # Static data files
 │   ├── page_instruction.json # AI prompts per survey page
@@ -141,6 +108,17 @@ Auto_PROMs_PSM_4_GUI/
 └── scripts/                  # Build tools
     └── build_executable.py   # PyInstaller build script
 ```
+
+## Color Scheme — "Refreshing Summer Fun"
+
+| Color | Hex | Usage |
+|-------|-----|-------|
+| Ocean Blue | `#219EBC` | Primary — header, progress bar, folder button |
+| Dark Navy | `#023047` | Text, stop button |
+| Amber | `#FFB703` | Settings icon accent |
+| Orange | `#FB8500` | Start/action button |
+| Light Sky | `#8ECAE6` | Borders, secondary button, badges |
+| Sky Tint | `#EBF5FA` | Page background |
 
 ## Configuration
 
@@ -164,7 +142,7 @@ Auto_PROMs_PSM_4_GUI/
         "max_tokens": 2000,
         "temperature": 0,
         "concurrent_enabled": true,
-        "max_concurrent_requests": 3
+        "max_concurrent_requests": 6
     },
     "output": {
         "csv_filename": "spine_survey_results.csv",
@@ -176,36 +154,62 @@ Auto_PROMs_PSM_4_GUI/
 
 API keys are stored separately in `.env`, never in `config.json`.
 
+## Building Executable
+
+```bash
+python scripts/build_executable.py
+```
+
+Output:
+- `dist/AutoSpineSurvey` (or `.exe` on Windows)
+- `AutoSpineSurvey_Portable/` — ready-to-distribute package
+
+### Portable Package Contents
+```
+AutoSpineSurvey_Portable/
+├── AutoSpineSurvey(.exe)
+├── config.json              # Settings (no API keys)
+├── .env.example             # API key template
+├── data/
+│   ├── page_instruction.json
+│   └── eq5d_value_k.csv
+├── input_pdfs/
+├── output_csv/
+├── logs/
+└── README.txt
+```
+
+> **Note**: Users must create their own `.env` with API keys. The portable package never includes secrets.
+
 ## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
 | `CLAUDE_API_KEY not found` | Create `.env` file with your API key. See `.env.example`. |
-| No PDF files found | Place PDFs in `input_pdfs/` or use drag-and-drop in GUI. |
+| No PDF files found | Use the upload zone in GUI to select files. |
 | Dependency errors | Ensure Python 3.9+, activate virtualenv, then `pip install -r requirements.txt`. |
-| GUI won't start | Install `customtkinter`: `pip install customtkinter>=5.3.0` |
+| GUI won't start | Install GUI deps: `pip install nicegui pywebview` |
 | Build fails | Ensure PyInstaller is installed: `pip install pyinstaller>=6.0.0` |
 
 Detailed logs: `logs/spine_survey_*.log`
 
 ## Version History
 
-### v2.1 (Current)
+### v2.1.1 (Current)
+- GUI migrated from CustomTkinter to NiceGUI 3.x + pywebview (native desktop window)
+- Color scheme: "Refreshing Summer Fun" (ocean blue + amber + orange)
+- Material Icons throughout (replaced emoji icons)
+- No separate browser required — runs as a native OS window
 - Default provider changed to Claude Haiku 4.5
 - Project structure reorganized: `core/`, `data/`, `scripts/` packages
 - CLI removed (GUI only)
-- Path management via `PROJECT_ROOT` / `DATA_DIR` in `core/__init__.py`
 
 ### v2.0
 - Security: API keys moved to `.env` file (python-dotenv)
 - Architecture: Abstract base processor class, validators module, EQ-5D caching
-- Performance: Concurrent page processing (ThreadPoolExecutor, max 3 workers)
+- Performance: Concurrent page processing (ThreadPoolExecutor, max 6 workers)
 - GUI: Rewritten with CustomTkinter (dark/light mode, collapsible log panel)
 - Build: PyInstaller build script
-
-### v1.1
-- GUI visual improvements
-- API model updates (Claude Haiku 4.5, GPT-5 mini)
 
 ### v1.0
 - Initial release with GUI and CLI

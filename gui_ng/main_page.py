@@ -1,5 +1,5 @@
 """
-Auto Spine Survey v2.1 - Main Page (NiceGUI)
+Auto Spine Survey v2.1.1 - Main Page (NiceGUI)
 Migrated from CustomTkinter gui/main_window.py to NiceGUI.
 """
 
@@ -7,6 +7,7 @@ import asyncio
 import logging
 import os
 import shutil
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -23,18 +24,62 @@ _state: Dict = {
     "is_processing": False,
     "stop_requested": False,
     "progress": 0.0,
-    "current_file": "\ub300\uae30 \uc911...",
-    "page_detail": "0 / 0 \ud398\uc774\uc9c0 \uc644\ub8cc",
+    "current_file": "대기 중...",
+    "page_detail": "0 / 0 페이지 완료",
     "log_lines": [],
     "result": None,       # {"output_file": str, "count": int}
     "error": None,
     "processed_files": set(),
     "_log_last_len": 0,
-    "_last_poll_processing": False,
+    "_output_file": "",   # set before opening result dialog
 }
 
 _ui: Dict = {}  # UI element references
 _log_visible: List[bool] = [False]  # track log panel visibility
+
+# File card status → Material Icon name + color
+_STATUS_ICON = {
+    'waiting':    ('schedule',      '#94a3b8'),
+    'processing': ('sync',          '#219EBC'),
+    'complete':   ('check_circle',  '#10b981'),
+    'error':      ('error',         '#ef4444'),
+}
+
+# ---------------------------------------------------------------------------
+# Quasar component color overrides (injected as inline <style> — never cached)
+# ---------------------------------------------------------------------------
+_QUASAR_STYLE_OVERRIDES = '''<style>
+/* --- Quasar Button Colors --- */
+.q-btn.btn-start,
+button.q-btn.btn-start { background: #FB8500 !important; color: #fff !important; }
+.q-btn.btn-start:hover { background: #d97000 !important; }
+.q-btn.btn-start.disabled,
+.q-btn.btn-start[disabled] { background: #FB8500 !important; opacity: 0.45 !important; }
+
+.q-btn.btn-stop,
+button.q-btn.btn-stop { background: #023047 !important; color: #fff !important; }
+.q-btn.btn-stop:hover { background: #034c6e !important; }
+.q-btn.btn-stop.disabled,
+.q-btn.btn-stop[disabled] { background: #023047 !important; opacity: 0.45 !important; }
+
+.q-btn.btn-folder,
+button.q-btn.btn-folder { background: #219EBC !important; color: #fff !important; }
+.q-btn.btn-folder:hover { background: #1a7d96 !important; }
+
+.q-btn.btn-secondary,
+button.q-btn.btn-secondary { background: #8ECAE6 !important; color: #023047 !important; }
+.q-btn.btn-secondary:hover { background: #72c2da !important; }
+
+/* --- Quasar Uploader Header --- */
+.q-uploader__header { background: #219EBC !important; color: #fff !important; }
+
+/* --- Settings Icon (amber on ocean-blue header) --- */
+.btn-icon-accent,
+.btn-icon-accent .q-btn__content,
+.btn-icon-accent .q-icon,
+.btn-icon-accent .material-icons { color: #FFB703 !important; background: transparent !important; }
+.btn-icon-accent:hover { background: rgba(255,255,255,0.15) !important; }
+</style>'''
 
 
 # ===================================================================
@@ -46,7 +91,24 @@ def build_page() -> None:
     pdf_files: List[str] = []
     file_card_elements: Dict[str, object] = {}
 
-    with ui.column().classes('w-full max-w-3xl mx-auto gap-3 p-4'):
+    # Pre-create result dialog (must exist in page context, not async task context)
+    _build_result_dialog()
+
+    # Inject Quasar overrides as inline <style> (bypasses static file caching)
+    ui.add_head_html(_QUASAR_STYLE_OVERRIDES)
+
+    # Prevent browser from opening dropped files when dropped outside upload widget
+    ui.add_head_html('''<script>
+    window.addEventListener("dragover", function(e) { e.preventDefault(); }, false);
+    window.addEventListener("drop", function(e) {
+        if (!e.target.closest(".q-uploader")) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, false);
+    </script>''')
+
+    with ui.column().classes('w-full gap-3 px-4 py-3'):
         _build_header()
         _build_drop_zone(pdf_files, file_card_elements)
         _build_file_list(pdf_files, file_card_elements)
@@ -68,16 +130,14 @@ def _build_header() -> None:
     model_name = "Claude Haiku 4.5" if provider == "claude" else "GPT-5 mini"
 
     with ui.row().classes('app-header w-full items-center justify-between'):
-        # Left: title + subtitle
         with ui.column().classes('gap-0'):
-            ui.label('Auto Spine Survey v2.1').classes('app-title')
-            ui.label('AI \uae30\ubc18 \uc124\ubb38\uc9c0 \ub370\uc774\ud130 \uc790\ub3d9 \ucd94\ucd9c').classes('app-subtitle')
+            ui.label('Auto Spine Survey').classes('app-title')
+            ui.label('AI 기반 설문지 데이터 자동 추출').classes('app-subtitle')
 
-        # Right: settings button + provider badge
         with ui.row().classes('items-center gap-2'):
             ui.button(icon='settings', on_click=open_settings).props(
                 'flat round dense'
-            ).classes('btn-icon')
+            ).classes('btn-icon-accent')
 
             with ui.element('div').classes('provider-badge'):
                 ui.label('AI').classes('text-xs')
@@ -89,60 +149,30 @@ def _build_header() -> None:
 # ===================================================================
 
 def _build_drop_zone(pdf_files: List[str], file_card_elements: Dict) -> None:
-    with ui.element('div').classes('drop-zone w-full') as zone:
-        zone.on('dragover.prevent', lambda: None)
-        zone.on('dragover', js_handler='(e) => e.currentTarget.classList.add("drag-over")')
-        zone.on('dragleave', js_handler='(e) => e.currentTarget.classList.remove("drag-over")')
-        zone.on('drop', js_handler='''(event) => {
-            event.preventDefault();
-            event.currentTarget.classList.remove("drag-over");
-            const items = [...event.dataTransfer.files];
-            const paths = items
-                .filter(f => f.name.toLowerCase().endsWith(".pdf"))
-                .map(f => f.path || "");
-            const names = items
-                .filter(f => f.name.toLowerCase().endsWith(".pdf"))
-                .map(f => f.name);
-            if (paths.length > 0) {
-                $emit("files_dropped", {paths: paths, names: names});
-            }
-        }''')
+    with ui.element('div').classes('drop-zone w-full'):
+        with ui.column().classes('items-center gap-1 py-2 w-full'):
+            ui.label('PDF 파일을 드래그하거나 클릭하여 선택').classes('drop-main-text')
 
-        with ui.column().classes('items-center gap-2 py-6'):
-            ui.icon('folder_open').classes('drop-icon')
-            ui.label('PDF \ud30c\uc77c\uc744 \ub4dc\ub798\uadf8\ud558\uc138\uc694').classes('drop-main-text')
-            ui.label('\ub610\ub294 \ud074\ub9ad\ud558\uc5ec \uc120\ud0dd').classes('drop-sub-text')
-
-        uploader = ui.upload(
+        _ui['uploader'] = ui.upload(
             multiple=True,
             on_upload=lambda e: _handle_upload(e, pdf_files, file_card_elements),
             auto_upload=True,
-        ).props('accept=.pdf').classes('hidden')
-
-        zone.on('click', lambda: uploader.run_method('pickFiles'))
-        zone.on('files_dropped', lambda e: _handle_drop_event(e, pdf_files, file_card_elements))
+        ).props('accept=.pdf flat label="파일 선택 또는 이곳에 드래그"').classes('w-full')
 
 
-def _handle_upload(event, pdf_files: List[str], file_card_elements: Dict) -> None:
-    """Handle file selected via the upload widget (click-to-browse)."""
+async def _handle_upload(event, pdf_files: List[str], file_card_elements: Dict) -> None:
+    """Handle file selected via the upload widget (click-to-browse or drag-and-drop).
+    NiceGUI 3.x: event.file is a FileUpload with async .save() / .read().
+    """
     from core import PROJECT_ROOT
 
     temp_dir = PROJECT_ROOT / 'temp_images'
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    name = event.name
-    content = event.content.read()
+    name = event.file.name
     dest = temp_dir / name
-    dest.write_bytes(content)
+    await event.file.save(str(dest))
     _add_files([str(dest)], pdf_files, file_card_elements)
-
-
-def _handle_drop_event(event, pdf_files: List[str], file_card_elements: Dict) -> None:
-    """Handle files dropped via drag-and-drop (Electron / NiceGUI desktop)."""
-    args = event.args
-    paths = [p for p in args.get('paths', []) if p]
-    if paths:
-        _add_files(paths, pdf_files, file_card_elements)
 
 
 # ===================================================================
@@ -150,16 +180,18 @@ def _handle_drop_event(event, pdf_files: List[str], file_card_elements: Dict) ->
 # ===================================================================
 
 def _build_file_list(pdf_files: List[str], file_card_elements: Dict) -> None:
-    with ui.row().classes('w-full items-center justify-between'):
-        _ui['file_count_label'] = ui.label('\ud30c\uc77c \ubaa9\ub85d (0\uac1c)').classes(
-            'text-sm font-bold'
-        )
-        ui.button('\ubaa8\ub450 \uc81c\uac70', on_click=lambda: _clear_all(pdf_files, file_card_elements)).props(
-            'flat dense size=sm'
-        ).classes('text-xs')
+    with ui.element('div').classes('file-list-section w-full'):
+        with ui.row().classes('w-full items-center justify-between'):
+            _ui['file_count_label'] = ui.label('파일 목록 (0개)').classes(
+                'text-sm font-bold'
+            )
+            ui.button(
+                '모두 제거',
+                on_click=lambda: _clear_all(pdf_files, file_card_elements),
+            ).props('flat dense size=sm').classes('text-xs')
 
-    with ui.scroll_area().classes('w-full').style('max-height: 200px'):
-        _ui['file_list_column'] = ui.column().classes('w-full gap-1')
+        with ui.scroll_area().classes('w-full').style('max-height: 180px'):
+            _ui['file_list_column'] = ui.column().classes('w-full gap-1')
 
 
 def _add_files(paths: List[str], pdf_files: List[str], file_card_elements: Dict) -> None:
@@ -172,20 +204,21 @@ def _add_files(paths: List[str], pdf_files: List[str], file_card_elements: Dict)
     if added:
         _update_file_count(pdf_files)
         _update_start_btn(pdf_files)
-        _set_status(f'{added}\uac1c \ud30c\uc77c \ucd94\uac00\ub428')
+        _set_status(f'{added}개 파일 추가됨')
 
 
 def _create_file_card(
     path: str, status: str, file_card_elements: Dict, pdf_files: List[str]
 ) -> None:
-    status_icons = {'waiting': '\u23f3', 'processing': '\ud83d\udd04', 'complete': '\u2705', 'error': '\u274c'}
-    icon_text = status_icons.get(status, '\u23f3')
+    icon_name, icon_color = _STATUS_ICON.get(status, ('schedule', '#94a3b8'))
     fname = os.path.basename(path)
 
     with _ui['file_list_column']:
         with ui.row().classes(f'file-card status-{status} w-full items-center justify-between') as row:
             with ui.row().classes('items-center gap-2 flex-grow'):
-                icon_el = ui.label(icon_text).classes('text-base')
+                icon_el = ui.label(icon_name).classes(
+                    'material-icons text-base'
+                ).style(f'color: {icon_color}')
                 ui.label(fname).classes('file-name')
                 detail_el = ui.label('').classes('file-detail')
             ui.button(
@@ -202,8 +235,9 @@ def _update_file_card_status(
     if path not in file_card_elements:
         return
     elems = file_card_elements[path]
-    status_icons = {'waiting': '\u23f3', 'processing': '\ud83d\udd04', 'complete': '\u2705', 'error': '\u274c'}
-    elems['icon'].set_text(status_icons.get(status, '\u23f3'))
+    icon_name, icon_color = _STATUS_ICON.get(status, ('schedule', '#94a3b8'))
+    elems['icon'].set_text(icon_name)
+    elems['icon'].style(f'color: {icon_color}')
     elems['detail'].set_text(detail)
 
     row = elems['row']
@@ -225,6 +259,8 @@ def _remove_file(path: str, pdf_files: List[str], file_card_elements: Dict) -> N
 def _clear_all(pdf_files: List[str], file_card_elements: Dict) -> None:
     for p in list(pdf_files):
         _remove_file(p, pdf_files, file_card_elements)
+    if 'uploader' in _ui:
+        _ui['uploader'].run_method('reset')
     if not _state['is_processing']:
         _reset_progress()
 
@@ -237,26 +273,26 @@ def _build_controls(pdf_files: List[str], file_card_elements: Dict) -> None:
     with ui.row().classes('w-full items-center justify-between'):
         with ui.row().classes('gap-2'):
             _ui['start_btn'] = ui.button(
-                '\u25b6  \ucc98\ub9ac \uc2dc\uc791',
+                '처리 시작',
+                icon='play_arrow',
                 on_click=lambda: asyncio.ensure_future(
                     _start_processing(pdf_files, file_card_elements)
                 ),
-            ).classes('btn-start')
+            ).props('unelevated no-caps').classes('btn-start')
             _ui['start_btn'].disable()
 
             _ui['stop_btn'] = ui.button(
-                '\u23f9  \uc911\uc9c0',
+                '중지',
+                icon='stop',
                 on_click=_stop_processing,
-            ).classes('btn-stop')
+            ).props('unelevated no-caps').classes('btn-stop')
             _ui['stop_btn'].disable()
 
-        with ui.row().classes('gap-2'):
-            ui.button(
-                '\ud83d\udcc1 \uacb0\uacfc \ud3f4\ub354', on_click=_open_output_folder
-            ).classes('btn-secondary')
-            ui.button(
-                '\u2699 \uc124\uc815', on_click=open_settings
-            ).classes('btn-secondary')
+        ui.button(
+            '결과 폴더',
+            icon='folder_open',
+            on_click=_open_output_folder,
+        ).props('unelevated no-caps').classes('btn-folder')
 
 
 # ===================================================================
@@ -265,13 +301,11 @@ def _build_controls(pdf_files: List[str], file_card_elements: Dict) -> None:
 
 def _build_progress_section() -> None:
     with ui.card().classes('progress-section w-full'):
-        _ui['current_file_label'] = ui.label('\u23f3 \ub300\uae30 \uc911...').classes(
+        _ui['current_file_label'] = ui.label('대기 중...').classes(
             'progress-file-label'
         )
-        _ui['progress_bar'] = ui.linear_progress(
-            value=0, show_value=False
-        ).props('color=teal')
-        _ui['page_label'] = ui.label('0 / 0 \ud398\uc774\uc9c0 \uc644\ub8cc').classes(
+        _ui['progress_bar'] = ui.linear_progress(value=0, show_value=False)
+        _ui['page_label'] = ui.label('0 / 0 페이지 완료').classes(
             'progress-page-label'
         )
 
@@ -285,8 +319,10 @@ def _build_log_panel() -> None:
         with ui.row().classes('log-panel-header w-full items-center justify-between').on(
             'click', _toggle_log
         ):
-            ui.label('\ud83d\udcdd \uc2e4\ud589 \ub85c\uadf8').classes('text-sm font-semibold')
-            _ui['log_toggle_icon'] = ui.icon('expand_more').classes('text-base')
+            with ui.row().classes('items-center gap-1'):
+                ui.label('article').classes('material-icons text-sm').style('color: #219EBC')
+                ui.label('실행 로그').classes('text-sm font-semibold')
+            _ui['log_toggle_icon'] = ui.label('expand_more').classes('material-icons text-base')
 
         _ui['log_container'] = ui.column().classes('w-full hidden')
         with _ui['log_container']:
@@ -298,14 +334,14 @@ def _build_log_panel() -> None:
 # ===================================================================
 
 def _build_status_bar() -> None:
+    config = ConfigManager()
+    provider = config.get_provider()
+    model_text = "Claude Haiku 4.5" if provider == "claude" else "GPT-5 mini"
+
     with ui.row().classes('status-bar w-full items-center justify-between'):
         with ui.row().classes('items-center gap-3'):
-            _ui['status_label'] = ui.label('\u2705 \uc900\ube44\ub428').classes('text-xs')
-            ui.label('v2.1').classes('text-xs font-bold')
-
-            config = ConfigManager()
-            provider = config.get_provider()
-            model_text = "Claude Haiku 4.5" if provider == "claude" else "GPT-5 mini"
+            _ui['status_label'] = ui.label('준비됨').classes('text-xs')
+            ui.label('v2.1.1').classes('text-xs font-bold')
             _ui['model_label'] = ui.label(model_text).classes('text-xs')
 
         _ui['time_label'] = ui.label('').classes('text-xs')
@@ -318,15 +354,42 @@ def _update_clock() -> None:
 
 
 # ===================================================================
+# Result Dialog (pre-created at page build time)
+# ===================================================================
+
+def _build_result_dialog() -> None:
+    """Pre-create the completion dialog so it can be opened from async context."""
+    with ui.dialog() as dlg:
+        with ui.card().classes('p-6'):
+            with ui.row().classes('items-center gap-2 mb-1'):
+                ui.label('check_circle').classes('material-icons').style(
+                    'color: #10b981; font-size: 22px'
+                )
+                _ui['result_title'] = ui.label('').classes('text-base font-semibold')
+            _ui['result_filename'] = ui.label('').classes('text-sm text-gray-500 mt-1')
+            with ui.row().classes('w-full justify-end gap-2 mt-4'):
+                ui.button(
+                    'CSV 열기',
+                    icon='open_in_new',
+                    on_click=lambda: _open_file(_state['_output_file']),
+                ).props('unelevated no-caps').classes('btn-start')
+                ui.button(
+                    '닫기',
+                    icon='close',
+                    on_click=dlg.close,
+                ).props('unelevated no-caps').classes('btn-secondary')
+    _ui['result_dialog'] = dlg
+
+
+# ===================================================================
 # Processing (async entry + blocking pipeline)
 # ===================================================================
 
 async def _start_processing(pdf_files: List[str], file_card_elements: Dict) -> None:
     if not pdf_files:
-        ui.notify('\ucc98\ub9ac\ud560 PDF \ud30c\uc77c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.', type='warning')
+        ui.notify('처리할 PDF 파일이 없습니다.', type='warning')
         return
 
-    # Reset state
     _state['is_processing'] = True
     _state['stop_requested'] = False
     _state['progress'] = 0.0
@@ -338,14 +401,12 @@ async def _start_processing(pdf_files: List[str], file_card_elements: Dict) -> N
 
     _ui['start_btn'].disable()
     _ui['stop_btn'].enable()
-    _set_status('\ud83d\udd04 \ucc98\ub9ac \uc911...')
-    _state['log_lines'].append(f"[{datetime.now().strftime('%H:%M:%S')}] \ucc98\ub9ac \uc2dc\uc791")
+    _set_status('처리 중...')
+    _state['log_lines'].append(f"[{datetime.now().strftime('%H:%M:%S')}] 처리 시작")
 
-    # Mark all files as processing
     for p in pdf_files:
         _update_file_card_status(p, 'processing', '', file_card_elements)
 
-    # Run blocking pipeline in a thread
     await run.io_bound(_run_pipeline, list(pdf_files), _state)
 
     _state['is_processing'] = False
@@ -359,8 +420,8 @@ async def _start_processing(pdf_files: List[str], file_card_elements: Dict) -> N
             file_card_elements,
         )
     elif _state['error']:
-        ui.notify(f"\uc624\ub958: {_state['error']}", type='negative', close_button=True)
-        _set_status('\u274c \uc624\ub958 \ubc1c\uc0dd')
+        ui.notify(f"오류: {_state['error']}", type='negative', close_button=True)
+        _set_status('오류 발생')
 
     _update_start_btn(pdf_files)
 
@@ -371,7 +432,6 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
     from core.claude_processor import ClaudeProcessor
     from core.openai_processor import OpenAIProcessor
     from core.csv_generator import CSVGenerator
-    from core.config import load_config
     from core import PROJECT_ROOT
 
     log_formatter = logging.Formatter(
@@ -406,12 +466,13 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
         output_folder = folders['output_folder']
         os.makedirs(output_folder, exist_ok=True)
 
-        _log(state, f"\ucc98\ub9ac \uc2dc\uc791 - \ucd1d {len(pdf_files)}\uac1c \ud30c\uc77c")
+        _log(state, f"처리 시작 - 총 {len(pdf_files)}개 파일")
 
         all_survey_data = []
         total_pages = 0
         file_page_counts = []
 
+        # Pre-scan page counts
         for pdf_path in pdf_files:
             try:
                 pdf_proc = PDFProcessor(pdf_path, folders['temp_folder'])
@@ -425,17 +486,17 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
 
         for idx, (pdf_path, page_count) in enumerate(file_page_counts):
             if state['stop_requested']:
-                _log(state, "\ucc98\ub9ac \uc911\uc9c0\ub428")
+                _log(state, "처리 중지됨")
                 break
 
             fname = os.path.basename(pdf_path)
-            state['current_file'] = f"\ud83d\udd04 PDF \ubcc0\ud658 \uc911: {fname} ({idx + 1}/{len(pdf_files)})"
-            _log(state, f"\ud30c\uc77c \uc2dc\uc791: {fname}")
+            state['current_file'] = f"PDF 변환 중: {fname} ({idx + 1}/{len(pdf_files)})"
+            _log(state, f"파일 시작: {fname}")
 
             try:
                 pdf_processor = PDFProcessor(pdf_path, folders['temp_folder'])
                 processed_images = pdf_processor.process_pdf()
-                logging.info(f"PDF \ubcc0\ud658 \uc644\ub8cc: {len(processed_images)}\uac1c \ud398\uc774\uc9c0")
+                logging.info(f"PDF 변환 완료: {len(processed_images)}개 페이지")
 
                 provider = config_manager.get_provider()
                 if provider == 'openai':
@@ -443,7 +504,7 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
                 else:
                     ai_processor = ClaudeProcessor(api_key)
 
-                state['current_file'] = f"\ud83e\udd16 AI \ucc98\ub9ac \uc911: {fname} ({len(processed_images)}\ud398\uc774\uc9c0)"
+                state['current_file'] = f"AI 처리 중: {fname} ({len(processed_images)}페이지)"
 
                 def progress_callback(page_idx, total_pages_in_file, _pp=None):
                     nonlocal processed_pages
@@ -452,11 +513,11 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
                         state['progress'] = processed_pages / total_pages
                     state['page_detail'] = (
                         f"{processed_pages} / {total_pages} "
-                        f"\ud398\uc774\uc9c0 \uc644\ub8cc ({state['progress'] * 100:.1f}%)"
+                        f"페이지 완료 ({state['progress'] * 100:.1f}%)"
                     )
                     state['current_file'] = (
-                        f"\ud83e\udd16 AI \ucc98\ub9ac \uc911: {fname} - "
-                        f"{page_idx + 1}/{total_pages_in_file} \ud398\uc774\uc9c0"
+                        f"AI 처리 중: {fname} - "
+                        f"{page_idx + 1}/{total_pages_in_file} 페이지"
                     )
 
                 survey_data = ai_processor.process_images(
@@ -466,10 +527,10 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
                 if survey_data:
                     all_survey_data.extend(survey_data)
                     state['processed_files'].add(pdf_path)
-                    _log(state, f"\uc644\ub8cc: {fname} - {len(survey_data)}\uac1c \ub370\uc774\ud130")
+                    _log(state, f"완료: {fname} - {len(survey_data)}개 데이터")
 
             except Exception as e:
-                error_msg = f"\uc624\ub958 ({fname}): {str(e)}"
+                error_msg = f"오류 ({fname}): {str(e)}"
                 logging.error(error_msg, exc_info=True)
                 _log(state, f"ERROR: {error_msg}")
 
@@ -480,16 +541,13 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
                         shutil.rmtree(temp_folder)
                         os.makedirs(temp_folder)
                     except PermissionError:
-                        try:
-                            for fn in os.listdir(temp_folder):
-                                fp = os.path.join(temp_folder, fn)
-                                if os.path.isfile(fp):
-                                    try:
-                                        os.remove(fp)
-                                    except Exception:
-                                        pass
-                        except Exception:
-                            pass
+                        for fn in os.listdir(temp_folder):
+                            fp = os.path.join(temp_folder, fn)
+                            if os.path.isfile(fp):
+                                try:
+                                    os.remove(fp)
+                                except Exception:
+                                    pass
 
         # CSV generation
         if all_survey_data and not state['stop_requested']:
@@ -506,12 +564,12 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
 
             if df is not None:
                 count = len(state['processed_files'])
-                _log(state, f"CSV \uc0dd\uc131 \uc644\ub8cc: {output_path}")
-                _log(state, f"\ucd1d {count}\uac1c \ud30c\uc77c \ucc98\ub9ac \uc644\ub8cc")
+                _log(state, f"CSV 생성 완료: {output_path}")
+                _log(state, f"총 {count}개 파일 처리 완료")
                 state['result'] = {'output_file': output_path, 'count': count}
 
     except Exception as e:
-        logging.error(f"\uce58\uba85\uc801 \uc624\ub958: {str(e)}", exc_info=True)
+        logging.error(f"치명적 오류: {str(e)}", exc_info=True)
         state['error'] = str(e)
         _log(state, f"FATAL: {str(e)}")
 
@@ -557,10 +615,11 @@ def _poll_state(pdf_files: List[str], file_card_elements: Dict) -> None:
             _ui['log_area'].set_content(escaped)
         _state['_log_last_len'] = cur_len
 
-    # Update file card statuses from processed_files set
-    for p in list(_state.get('processed_files', set())):
-        if p in file_card_elements:
-            _update_file_card_status(p, 'complete', '\uc644\ub8cc', file_card_elements)
+    # Update file card statuses
+    if _state['is_processing']:
+        for p in list(_state.get('processed_files', set())):
+            if p in file_card_elements:
+                _update_file_card_status(p, 'complete', '완료', file_card_elements)
 
 
 # ===================================================================
@@ -570,25 +629,17 @@ def _poll_state(pdf_files: List[str], file_card_elements: Dict) -> None:
 def _complete_processing(
     output_file: str, count: int, pdf_files: List[str], file_card_elements: Dict
 ) -> None:
-    _set_status(f'\u2705 \uc644\ub8cc: {count}\uac1c \ud30c\uc77c \ucc98\ub9ac\ub428')
+    _set_status(f'완료: {count}개 파일 처리됨')
     _state['log_lines'].append(
-        f"[{datetime.now().strftime('%H:%M:%S')}] \ucc98\ub9ac \uc644\ub8cc: {count}\uac1c \ud30c\uc77c"
+        f"[{datetime.now().strftime('%H:%M:%S')}] 처리 완료: {count}개 파일"
     )
 
-    with ui.dialog() as dlg, ui.card().classes('p-6'):
-        ui.label(f'\ud83c\udf89 {count}\uac1c \ud30c\uc77c\uc774 \uc131\uacf5\uc801\uc73c\ub85c \ucc98\ub9ac\ub418\uc5c8\uc2b5\ub2c8\ub2e4.').classes(
-            'text-base font-semibold'
-        )
-        ui.label(f'\uacb0\uacfc: {os.path.basename(output_file)}').classes('text-sm text-gray-500 mt-2')
-        with ui.row().classes('w-full justify-end gap-2 mt-4'):
-            ui.button('CSV \uc5f4\uae30', on_click=lambda: _open_file(output_file)).classes('btn-start')
-            ui.button('\ub2eb\uae30', on_click=dlg.close).classes('btn-secondary')
-    dlg.open()
+    _state['_output_file'] = output_file
+    _ui['result_title'].set_text(f'{count}개 파일이 성공적으로 처리되었습니다.')
+    _ui['result_filename'].set_text(f'결과: {os.path.basename(output_file)}')
+    _ui['result_dialog'].open()
 
-    # Clear file list
     _clear_all(pdf_files, file_card_elements)
-
-    # Reset progress after 2 seconds
     ui.timer(2.0, _reset_progress, once=True)
 
 
@@ -602,9 +653,8 @@ def _set_status(text: str) -> None:
 
 
 def _update_file_count(pdf_files: List[str]) -> None:
-    count = len(pdf_files)
     if 'file_count_label' in _ui:
-        _ui['file_count_label'].set_text(f'\ud30c\uc77c \ubaa9\ub85d ({count}\uac1c)')
+        _ui['file_count_label'].set_text(f'파일 목록 ({len(pdf_files)}개)')
 
 
 def _update_start_btn(pdf_files: List[str]) -> None:
@@ -618,10 +668,10 @@ def _update_start_btn(pdf_files: List[str]) -> None:
 
 def _stop_processing() -> None:
     _state['stop_requested'] = True
-    _set_status('\u26d4 \ucc98\ub9ac \uc911\uc9c0\ub428')
-    _state['current_file'] = '\u23f9\ufe0f \uc911\uc9c0\ub428'
+    _set_status('처리 중지됨')
+    _state['current_file'] = '중지됨'
     _state['log_lines'].append(
-        f"[{datetime.now().strftime('%H:%M:%S')}] \ucc98\ub9ac \uc911\uc9c0"
+        f"[{datetime.now().strftime('%H:%M:%S')}] 처리 중지"
     )
 
 
@@ -629,22 +679,21 @@ def _open_output_folder() -> None:
     from core import PROJECT_ROOT
     output_folder = str(PROJECT_ROOT / 'output_csv')
     os.makedirs(output_folder, exist_ok=True)
-
-    if os.name == 'nt':
-        os.startfile(output_folder)
-    elif sys.platform == 'darwin':
-        os.system(f'open "{output_folder}"')
-    else:
-        os.system(f'xdg-open "{output_folder}"')
+    _open_path(output_folder)
 
 
 def _open_file(path: str) -> None:
-    if os.name == 'nt':
+    _open_path(path)
+
+
+def _open_path(path: str) -> None:
+    """Open a file or folder using the platform's default handler (safe, no shell)."""
+    if sys.platform == 'darwin':
+        subprocess.Popen(['open', path])
+    elif os.name == 'nt':
         os.startfile(path)
-    elif sys.platform == 'darwin':
-        os.system(f'open "{path}"')
     else:
-        os.system(f'xdg-open "{path}"')
+        subprocess.Popen(['xdg-open', path])
 
 
 def open_settings() -> None:
@@ -664,15 +713,15 @@ def _refresh_provider_label() -> None:
 
 def _reset_progress() -> None:
     _state['progress'] = 0.0
-    _state['current_file'] = '\u23f3 \ub300\uae30 \uc911...'
-    _state['page_detail'] = '0 / 0 \ud398\uc774\uc9c0 \uc644\ub8cc'
+    _state['current_file'] = '대기 중...'
+    _state['page_detail'] = '0 / 0 페이지 완료'
     if 'progress_bar' in _ui:
         _ui['progress_bar'].set_value(0)
     if 'current_file_label' in _ui:
-        _ui['current_file_label'].set_text('\u23f3 \ub300\uae30 \uc911...')
+        _ui['current_file_label'].set_text('대기 중...')
     if 'page_label' in _ui:
-        _ui['page_label'].set_text('0 / 0 \ud398\uc774\uc9c0 \uc644\ub8cc')
-    _set_status('\u2705 \uc900\ube44\ub428')
+        _ui['page_label'].set_text('0 / 0 페이지 완료')
+    _set_status('준비됨')
 
 
 def _toggle_log() -> None:

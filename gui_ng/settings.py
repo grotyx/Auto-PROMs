@@ -328,10 +328,14 @@ def build_settings_dialog(on_saved: Optional[Callable] = None):
 
         # ---- Bottom buttons ----
         with ui.row().classes('w-full justify-end gap-2 mt-2'):
-            ui.button('취소', on_click=dialog.close).classes('btn-secondary')
-            ui.button('저장', on_click=lambda: _save_and_close(
-                dialog, config, api_state, folder_state, proc_state, out_state, on_saved,
-            )).classes('btn-start')
+            ui.button(
+                '취소', icon='close', on_click=dialog.close,
+            ).props('unelevated no-caps').classes('btn-secondary')
+            ui.button(
+                '저장', icon='save', on_click=lambda: _save_and_close(
+                    dialog, config, api_state, folder_state, proc_state, out_state, on_saved,
+                ),
+            ).props('unelevated no-caps').classes('btn-start')
 
         # ---- Copyright ----
         ui.label(
