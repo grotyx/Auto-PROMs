@@ -97,15 +97,15 @@ def build_page() -> None:
     # Inject Quasar overrides as inline <style> (bypasses static file caching)
     ui.add_head_html(_QUASAR_STYLE_OVERRIDES)
 
-    # Prevent browser from opening dropped files when dropped outside upload widget
+    # Block browser from EVER opening a dropped file (prevents PDF rendering in webview).
+    # Capture phase (3rd arg = true) ensures this runs BEFORE any child handlers.
+    # The Quasar uploader still reads dataTransfer.files in its own bubble handler.
     ui.add_head_html('''<script>
-    window.addEventListener("dragover", function(e) { e.preventDefault(); }, false);
-    window.addEventListener("drop", function(e) {
-        if (!e.target.closest(".q-uploader")) {
+    ["dragover","drop","dragenter"].forEach(function(evt){
+        document.addEventListener(evt, function(e){
             e.preventDefault();
-            e.stopPropagation();
-        }
-    }, false);
+        }, true);
+    });
     </script>''')
 
     with ui.column().classes('w-full gap-3 px-4 py-3'):
@@ -151,7 +151,9 @@ def _build_header() -> None:
 def _build_drop_zone(pdf_files: List[str], file_card_elements: Dict) -> None:
     with ui.element('div').classes('drop-zone w-full'):
         with ui.column().classes('items-center gap-1 py-2 w-full'):
+            ui.label('upload_file').classes('material-icons drop-icon')
             ui.label('PDF 파일을 드래그하거나 클릭하여 선택').classes('drop-main-text')
+            ui.label('PDF, 각 6페이지 / 최대 50개').classes('drop-sub-text')
 
         _ui['uploader'] = ui.upload(
             multiple=True,
