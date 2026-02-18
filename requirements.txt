@@ -1,4 +1,4 @@
-# Auto Spine Survey v2.0 - Python Dependencies
+# Auto Spine Survey v2.1 - Python Dependencies
 
 # Core AI
 anthropic>=0.79.0
@@ -15,9 +15,9 @@ Pillow>=11.0.0
 # Data
 pandas>=2.2.0
 
-# GUI
-customtkinter>=5.3.0
-tkinterdnd2>=0.4.0
+# GUI (NiceGUI + native desktop window via pywebview)
+nicegui>=1.4.0
+pywebview>=4.4.0
 
 # Security
 python-dotenv>=1.0.0

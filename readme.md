@@ -51,13 +51,15 @@ Default provider is Claude. To switch provider, edit `config.json`:
 ### 3. Run
 
 ```bash
-python main_gui.py
+python app.py
 ```
 
 ## Features
 
-- **Modern GUI** — CustomTkinter with dark/light mode toggle
-- **Drag-and-drop** — Drop PDF files directly (Windows); click to select (all platforms)
+- **Native desktop window** — NiceGUI + pywebview (no separate browser needed)
+- **Modern UI** — Teal/beige color scheme with clean card-based layout
+- **Click to select** — PDF file picker via native OS dialog
+- **Drag-and-drop** — Drop PDF files directly onto the drop zone (Windows)
 - **Concurrent processing** — Parallel page API calls via ThreadPoolExecutor
 - **Dual AI support** — Switch between Claude (default) and OpenAI at runtime
 - **EQ-5D value calculation** — Automatic lookup from Korean value set table
@@ -65,8 +67,8 @@ python main_gui.py
 
 ## Usage
 
-1. Run `python main_gui.py`
-2. Drag PDF files onto the drop zone (or click to select)
+1. Run `python app.py`
+2. Click the drop zone to select PDF files (or drag-and-drop on Windows)
 3. Click "처리 시작" (Start Processing)
 4. Results saved to `output_csv/`
 
@@ -112,12 +114,12 @@ AutoSpineSurvey_Portable/
 
 ```
 Auto_PROMs_PSM_4_GUI/
-├── main_gui.py               # GUI entry point
+├── app.py                    # Entry point: ui.run(native=True)
 ├── README.md
 ├── requirements.txt
 ├── .env.example              # API key template (committed)
 │
-├── core/                     # Processing modules
+├── core/                     # Processing modules (unchanged)
 │   ├── __init__.py           # PROJECT_ROOT, DATA_DIR
 │   ├── config.py             # ConfigManager (dotenv + pathlib)
 │   ├── base_processor.py     # Abstract base AI processor
@@ -127,10 +129,11 @@ Auto_PROMs_PSM_4_GUI/
 │   ├── pdf_processor.py      # PDF → image conversion (PyMuPDF)
 │   └── csv_generator.py      # CSV output generation
 │
-├── gui/                      # GUI modules
-│   ├── main_window.py        # CustomTkinter main window
-│   ├── settings_dialog.py    # Settings dialog (tabs, .env management)
-│   └── widgets.py            # FileCard, LogPanel, DropZone
+├── gui_ng/                   # NiceGUI-based GUI modules
+│   ├── __init__.py
+│   ├── styles.css            # CSS variables + component styles
+│   ├── main_page.py          # Main UI + background pipeline
+│   └── settings.py           # Settings dialog (4 tabs)
 │
 ├── data/                     # Static data files
 │   ├── page_instruction.json # AI prompts per survey page
@@ -181,7 +184,7 @@ API keys are stored separately in `.env`, never in `config.json`.
 | `CLAUDE_API_KEY not found` | Create `.env` file with your API key. See `.env.example`. |
 | No PDF files found | Place PDFs in `input_pdfs/` or use drag-and-drop in GUI. |
 | Dependency errors | Ensure Python 3.9+, activate virtualenv, then `pip install -r requirements.txt`. |
-| GUI won't start | Install `customtkinter`: `pip install customtkinter>=5.3.0` |
+| GUI won't start | Install GUI deps: `pip install nicegui pywebview` |
 | Build fails | Ensure PyInstaller is installed: `pip install pyinstaller>=6.0.0` |
 
 Detailed logs: `logs/spine_survey_*.log`
@@ -189,6 +192,9 @@ Detailed logs: `logs/spine_survey_*.log`
 ## Version History
 
 ### v2.1 (Current)
+- GUI migrated from CustomTkinter to NiceGUI + pywebview (native desktop window)
+- Color scheme: teal (`#0e9594`) + warm beige (`#f5dfbb`) + accent red (`#f2542d`)
+- No separate browser required — runs as a native OS window
 - Default provider changed to Claude Haiku 4.5
 - Project structure reorganized: `core/`, `data/`, `scripts/` packages
 - CLI removed (GUI only)
