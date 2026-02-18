@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Auto Spine Survey v2.1 — AI 기반 척추 설문지(PROMs) 데이터 자동 추출 시스템.
+Auto Spine Survey v2.1.1 — AI 기반 척추 설문지(PROMs) 데이터 자동 추출 시스템.
 PDF → 이미지(300 DPI) → AI Vision API → JSON → 검증 → CSV
 
 **Platform**: Windows (macOS/Linux 호환)
@@ -20,7 +20,7 @@ source .venv/bin/activate   # macOS/Linux
 pip install -r requirements.txt
 
 # Run
-python main_gui.py
+python app.py
 
 # Build executable
 python scripts/build_executable.py
@@ -30,7 +30,7 @@ python scripts/build_executable.py
 
 ```
 Auto_PROMs_PSM_4_GUI/
-├── main_gui.py               # GUI entry point (root에 유일한 실행 파일)
+├── app.py                    # Entry point: ui.run(native=True)
 ├── README.md
 ├── CLAUDE.md
 ├── requirements.txt
@@ -48,11 +48,11 @@ Auto_PROMs_PSM_4_GUI/
 │   ├── pdf_processor.py      # PDF → image (PyMuPDF 300 DPI)
 │   └── csv_generator.py      # Dict → CSV (35+ fields)
 │
-├── gui/                      # GUI 모듈
+├── gui_ng/                   # NiceGUI-based GUI 모듈
 │   ├── __init__.py
-│   ├── main_window.py        # CustomTkinter main window
-│   ├── settings_dialog.py    # Settings with .env management
-│   └── widgets.py            # FileCard, LogPanel, DropZone
+│   ├── styles.css            # CSS variables + component styles
+│   ├── main_page.py          # Main UI + background pipeline
+│   └── settings.py           # Settings dialog (4 tabs)
 │
 ├── data/                     # 정적 데이터 파일
 │   ├── page_instruction.json # AI prompts per page (DO NOT MODIFY)
@@ -104,11 +104,12 @@ CSV output (35+ fields)
 
 - **Strategy Pattern**: `BaseProcessor` ABC → `ClaudeProcessor` (default) / `OpenAIProcessor`
 - **Concurrency**: `ThreadPoolExecutor` + `SimpleRateLimiter` (semaphore), config에서 on/off
-- **GUI Framework**: CustomTkinter 5.3.0 (dark/light mode, HighDPI)
-- **DnD**: `tkinterdnd2` (Windows only), click-to-browse fallback (macOS/Linux)
+- **GUI Framework**: NiceGUI 3.x + pywebview (native desktop window, no browser needed)
+- **CSS**: Inline `<style>` injection (`_QUASAR_STYLE_OVERRIDES`) + cache-busted static CSS
+- **Upload**: `ui.upload` for file selection + drag-and-drop (cross-platform)
 - **Config**: `python-dotenv` for API keys, `config.json` for runtime settings
 - **EQ-5D Caching**: `SurveyValidator._eq5d_table` class variable, loaded once
-- **Package structure**: `core/` (relative imports), `gui/` (relative imports), `data/` (static)
+- **Package structure**: `core/` (relative imports), `gui_ng/` (relative imports), `data/` (static)
 
 ## Survey Fields Reference
 
@@ -158,26 +159,22 @@ OPENAI_API_KEY=sk-proj-xxx
 
 ## GUI Customization
 
-- **Window**: 800x900, min 700x750
-- **Fonts**: 맑은 고딕 (Windows), AppleSDGothicNeo (macOS), Noto Sans CJK KR (Linux)
-- **Theme**: system/dark/light via `ctk.set_appearance_mode()`
-- **Widgets**: `gui/widgets.py` — FileCard, LogPanel, DropZone
+- **Window**: 640x820, native via pywebview (no browser)
+- **Fonts**: AppleSDGothicNeo (macOS), 맑은 고딕 (Windows), Noto Sans CJK KR (Linux) — CSS font-family
+- **Color Scheme**: "Refreshing Summer Fun" — CSS variables in `gui_ng/styles.css`
+- **Icons**: Material Icons throughout (no emoji)
+- **Components**: `gui_ng/main_page.py` (UI + pipeline), `gui_ng/settings.py` (settings dialog)
 
 ## Build Notes
 
 - `scripts/build_executable.py` generates `.spec` dynamically — do NOT pass `--onefile`, `--windowed`, `--name` to PyInstaller
-- CustomTkinter resources are auto-bundled via `get_ctk_data_path()`
+- NiceGUI static assets bundled via hidden imports (nicegui, webview, fastapi, uvicorn)
 - `.env` is excluded from builds; `config.json` is bundled directly
 - Portable package includes `config.json`, `.env.example`, `data/` files
 
 ## Platform Notes
 
 - **Path**: `pathlib.Path` throughout (cross-platform backslash handling)
-- **DnD**: Windows only via `tkinterdnd2`; macOS/Linux use click-to-browse
+- **Upload**: `ui.upload` with drag-and-drop (cross-platform)
 - **Build**: PyInstaller single-file executable
-- **Fonts**: Platform-detected in `gui/widgets.py:get_platform_font()`
-
-# currentDate
-Today's date is 2026-02-17.
-
-      IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context unless it is highly relevant to your task.
+- **Native Window**: pywebview — WKWebView (macOS), Edge WebView2 (Windows)

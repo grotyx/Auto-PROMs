@@ -1,20 +1,30 @@
 /* ============================================================
-   Auto Spine Survey v2.1 — NiceGUI Theme
-   Color Palette: Teal + Warm Beige + Orange-Red Accent
+   Auto Spine Survey v2.1.1 — NiceGUI Theme
+   Color Palette: "Refreshing Summer Fun"
+     #8ECAE6  light sky blue
+     #219EBC  ocean blue  ← primary
+     #023047  dark navy
+     #FFB703  amber
+     #FB8500  orange     ← accent
    ============================================================ */
 
 /* 1. CSS Variables
    ------------------------------------------------------------ */
 :root {
-    --primary: #0e9594;
-    --background: #f5dfbb;
-    --accent: #f2542d;
-    --surface: #ffffff;
-    --text-primary: #1e293b;
-    --text-muted: #6b7280;
-    --border: #e2e8f0;
-    --success: #10b981;
-    --error: #ef4444;
+    --primary:    #219EBC;   /* ocean blue */
+    --primary-dk: #1a7d96;   /* darker primary for hover */
+    --dark:       #023047;   /* dark navy — text, stop btn */
+    --amber:      #FFB703;   /* amber — header icon accent */
+    --accent:     #FB8500;   /* orange — action button */
+    --accent-dk:  #d97000;   /* darker orange hover */
+    --sky:        #8ECAE6;   /* light sky blue — borders, badges */
+    --background: #EBF5FA;   /* near-white sky tint */
+    --surface:    #ffffff;
+    --text-primary: #023047;
+    --text-muted:   #4d7d96;
+    --border:     #b8dce8;
+    --success:    #10b981;
+    --error:      #ef4444;
 }
 
 /* 2. Body / Page
@@ -75,6 +85,25 @@ body,
     background-color: rgba(255, 255, 255, 0.15) !important;
 }
 
+/* 6-a. Accent Icon Button (settings icon in header — amber on ocean blue)
+   ------------------------------------------------------------ */
+.btn-icon-accent,
+.btn-icon-accent .q-icon,
+.btn-icon-accent .q-btn__content,
+.btn-icon-accent .q-btn__content .q-icon {
+    background: transparent !important;
+    border: none !important;
+    color: var(--amber) !important;
+    cursor: pointer !important;
+}
+.btn-icon-accent {
+    border-radius: 6px !important;
+    transition: background-color 0.15s ease !important;
+}
+.btn-icon-accent:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
 /* 7. Provider Badge
    ------------------------------------------------------------ */
 .provider-badge {
@@ -96,9 +125,9 @@ body,
 /* 8. Drop Zone
    ------------------------------------------------------------ */
 .drop-zone {
-    border: 2px dashed #b0c4c4 !important;
+    border: 2px dashed var(--sky) !important;
     border-radius: 12px !important;
-    min-height: 140px !important;
+    min-height: 80px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
@@ -106,18 +135,18 @@ body,
     cursor: pointer !important;
     transition: border-color 0.2s ease, background-color 0.2s ease !important;
     background-color: transparent !important;
-    padding: 20px !important;
+    padding: 10px 16px !important;
 }
 .drop-zone:hover {
     border-color: var(--primary) !important;
-    background-color: rgba(14, 149, 148, 0.04) !important;
+    background-color: rgba(33, 158, 188, 0.05) !important;
 }
 
 /* 9. Drop Zone — Drag Over State
    ------------------------------------------------------------ */
 .drop-zone.drag-over {
     border-color: var(--primary) !important;
-    background-color: rgba(14, 149, 148, 0.08) !important;
+    background-color: rgba(33, 158, 188, 0.10) !important;
 }
 
 /* 10. Drop Icon
@@ -139,6 +168,15 @@ body,
 .drop-sub-text {
     font-size: 12px !important;
     color: var(--text-muted) !important;
+}
+
+/* 11-a. File List Section (boundary)
+   ------------------------------------------------------------ */
+.file-list-section {
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    background-color: var(--surface) !important;
+    padding: 10px 14px 10px !important;
 }
 
 /* 12. File Card
@@ -202,7 +240,7 @@ body,
     font-weight: 500 !important;
 }
 .badge-processing {
-    background-color: rgba(14, 149, 148, 0.12) !important;
+    background-color: rgba(33, 158, 188, 0.12) !important;
     color: var(--primary) !important;
     font-size: 11px !important;
     padding: 2px 8px !important;
@@ -240,7 +278,7 @@ body,
     transition: background-color 0.15s ease, opacity 0.15s ease !important;
 }
 .btn-start:hover {
-    background-color: #d9461f !important;
+    background-color: var(--accent-dk) !important;
 }
 .btn-start:disabled,
 .btn-start[disabled] {
@@ -248,10 +286,10 @@ body,
     cursor: not-allowed !important;
 }
 
-/* 19. Stop Button
+/* 19. Stop Button (dark navy)
    ------------------------------------------------------------ */
 .btn-stop {
-    background-color: #D9534F !important;
+    background-color: var(--dark) !important;
     color: #ffffff !important;
     border: none !important;
     border-radius: 8px !important;
@@ -262,24 +300,46 @@ body,
     transition: background-color 0.15s ease !important;
 }
 .btn-stop:hover {
-    background-color: #c9302c !important;
+    background-color: #034c6e !important;
+}
+.btn-stop:disabled,
+.btn-stop[disabled] {
+    opacity: 0.45 !important;
+    cursor: not-allowed !important;
 }
 
 /* 20. Secondary Button
    ------------------------------------------------------------ */
 .btn-secondary {
-    background-color: #e2e8f0 !important;
-    color: var(--text-primary) !important;
+    background-color: var(--sky) !important;
+    color: var(--dark) !important;
     border: none !important;
     border-radius: 8px !important;
     padding: 8px 16px !important;
     font-size: 13px !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     cursor: pointer !important;
     transition: background-color 0.15s ease !important;
 }
 .btn-secondary:hover {
-    background-color: #cbd5e1 !important;
+    background-color: #72c2da !important;
+}
+
+/* 20-a. Folder / Utility Button (teal primary)
+   ------------------------------------------------------------ */
+.btn-folder {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 24px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease !important;
+}
+.btn-folder:hover {
+    background-color: var(--primary-dk) !important;
 }
 
 /* 21. Progress Section
@@ -294,13 +354,13 @@ body,
 /* 22. Quasar Linear Progress — Bar Override
    ------------------------------------------------------------ */
 .q-linear-progress__model {
-    background-color: #0e9594 !important;
+    background-color: var(--primary) !important;
 }
 
 /* 23. Quasar Linear Progress — Track Override
    ------------------------------------------------------------ */
 .q-linear-progress__track {
-    background: #dde9e9 !important;
+    background: var(--sky) !important;
 }
 
 /* 24. Progress Labels
@@ -328,7 +388,7 @@ body,
     user-select: none !important;
 }
 .log-panel-header:hover {
-    background-color: rgba(14, 149, 148, 0.06) !important;
+    background-color: rgba(33, 158, 188, 0.08) !important;
 }
 
 /* 26. Log Body
@@ -402,11 +462,43 @@ body,
     border-radius: 3px !important;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background-color: #0b7a79 !important;
+    background-color: var(--primary-dk) !important;
 }
 
 /* 32. Utility — Ensure overrides survive Tailwind resets
    ------------------------------------------------------------ */
 .nicegui-content * {
     box-sizing: border-box;
+}
+
+/* 33. Quasar Upload Header Override
+   ------------------------------------------------------------ */
+.q-uploader__header {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+/* 34. Quasar Button Color Overrides
+   (compound selector beats Quasar's default .q-btn rules)
+   ------------------------------------------------------------ */
+.q-btn.btn-start {
+    background-color: var(--accent) !important;
+    color: #ffffff !important;
+}
+.q-btn.btn-start:hover {
+    background-color: var(--accent-dk) !important;
+}
+.q-btn.btn-stop {
+    background-color: var(--dark) !important;
+    color: #ffffff !important;
+}
+.q-btn.btn-stop:hover {
+    background-color: #034c6e !important;
+}
+.q-btn.btn-folder {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+.q-btn.btn-folder:hover {
+    background-color: var(--primary-dk) !important;
 }

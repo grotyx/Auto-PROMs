@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """
-Auto Spine Survey v2.1 - Build Script
+Auto Spine Survey v2.1.1 - Build Script
 Builds GUI executable using PyInstaller.
 
 Usage:
     python scripts/build_executable.py
 """
 
-import json
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-VERSION = "2.1"
+VERSION = "2.1.1"
 APP_NAME = "AutoSpineSurvey"
 
 # Data files to bundle (paths relative to project root)
@@ -23,9 +22,6 @@ DATA_FILES = [
     ("config.json", "."),
     (".env.example", "."),
 ]
-
-# Files that must NEVER be included in builds (contain user data)
-EXCLUDED_FILES = [".env"]
 
 HIDDEN_IMPORTS = [
     "cv2",
@@ -136,7 +132,7 @@ def create_spec_content() -> str:
     # Build hidden imports
     imports = list(HIDDEN_IMPORTS)
     if sys.platform == "win32":
-        imports.append("tkinterdnd2")
+        imports.append("webview")  # pywebview Windows backend
 
     imports_str = ",\n".join(f"    '{imp}'" for imp in imports)
 
