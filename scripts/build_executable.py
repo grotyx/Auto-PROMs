@@ -48,15 +48,30 @@ HIDDEN_IMPORTS = [
     "core.pdf_processor",
     "core.csv_generator",
     "core.validators",
-    "customtkinter",
-    "tkinter",
-    "tkinter.ttk",
-    "tkinter.messagebox",
-    "tkinter.filedialog",
+    # NiceGUI / web stack
+    "nicegui",
+    "nicegui.elements",
+    "nicegui.events",
+    "webview",
+    "fastapi",
+    "uvicorn",
+    "uvicorn.logging",
+    "uvicorn.loops",
+    "uvicorn.loops.auto",
+    "uvicorn.protocols",
+    "uvicorn.protocols.http",
+    "uvicorn.protocols.http.auto",
+    "uvicorn.protocols.websockets",
+    "uvicorn.protocols.websockets.auto",
+    "uvicorn.lifespan",
+    "uvicorn.lifespan.on",
+    "socketio",
+    "engineio",
+    "aiofiles",
+    "httpx",
     "threading",
-    "queue",
+    "asyncio",
     "webbrowser",
-    "platform",
 ]
 
 
@@ -75,8 +90,8 @@ def check_prerequisites():
         sys.exit(1)
 
     root = get_project_root()
-    if not (root / "main_gui.py").exists():
-        print(f"[FAIL] main_gui.py not found in {root}")
+    if not (root / "app.py").exists():
+        print(f"[FAIL] app.py not found in {root}")
         sys.exit(1)
 
     for data_file, _ in DATA_FILES:
@@ -86,14 +101,14 @@ def check_prerequisites():
     print(f"[OK] Project root: {root}")
 
 
-def get_ctk_data_path() -> list:
-    """Locate CustomTkinter package data for bundling."""
+def get_nicegui_data_path() -> list:
+    """Locate NiceGUI package data for bundling."""
     try:
-        import customtkinter
-        ctk_path = Path(customtkinter.__file__).parent
-        return [(str(ctk_path), "customtkinter")]
+        import nicegui
+        ng_path = Path(nicegui.__file__).parent
+        return [(str(ng_path), "nicegui")]
     except ImportError:
-        print("[WARN] customtkinter not found; build may fail")
+        print("[WARN] nicegui not found; build may fail")
         return []
 
 
@@ -107,13 +122,13 @@ def create_spec_content() -> str:
         if (root / data_file).exists():
             datas_lines.append(f"    ('{data_file}', '{dest}'),")
 
-    # Bundle core/ and gui/ packages
+    # Bundle core/ and gui_ng/ packages
     datas_lines.append("    ('core/', 'core/'),")
-    datas_lines.append("    ('gui/', 'gui/'),")
+    datas_lines.append("    ('gui_ng/', 'gui_ng/'),")
 
-    # Add CustomTkinter resources
-    ctk_data = get_ctk_data_path()
-    for src, dst in ctk_data:
+    # Add NiceGUI resources (static assets, templates)
+    ng_data = get_nicegui_data_path()
+    for src, dst in ng_data:
         datas_lines.append(f"    (r'{src}', '{dst}'),")
 
     datas_str = "\n".join(datas_lines)
@@ -139,7 +154,7 @@ hiddenimports = [
 ]
 
 a = Analysis(
-    ['main_gui.py'],
+    ['app.py'],
     pathex=[],
     binaries=[],
     datas=datas,

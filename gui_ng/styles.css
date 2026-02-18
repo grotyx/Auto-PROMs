@@ -1,0 +1,412 @@
+/* ============================================================
+   Auto Spine Survey v2.1 — NiceGUI Theme
+   Color Palette: Teal + Warm Beige + Orange-Red Accent
+   ============================================================ */
+
+/* 1. CSS Variables
+   ------------------------------------------------------------ */
+:root {
+    --primary: #0e9594;
+    --background: #f5dfbb;
+    --accent: #f2542d;
+    --surface: #ffffff;
+    --text-primary: #1e293b;
+    --text-muted: #6b7280;
+    --border: #e2e8f0;
+    --success: #10b981;
+    --error: #ef4444;
+}
+
+/* 2. Body / Page
+   ------------------------------------------------------------ */
+body,
+.nicegui-content {
+    background-color: var(--background) !important;
+    color: var(--text-primary) !important;
+    font-family: "AppleSDGothicNeo", "맑은 고딕", "Malgun Gothic",
+        "Noto Sans CJK KR", "Noto Sans KR", -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, sans-serif !important;
+    margin: 0;
+    padding: 0;
+}
+
+/* 3. App Header
+   ------------------------------------------------------------ */
+.app-header {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+    border-radius: 10px !important;
+    padding: 14px 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+/* 4. App Title
+   ------------------------------------------------------------ */
+.app-title {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    margin: 0 !important;
+    line-height: 1.3 !important;
+}
+
+/* 5. App Subtitle
+   ------------------------------------------------------------ */
+.app-subtitle {
+    font-size: 12px !important;
+    color: rgba(255, 255, 255, 0.80) !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+}
+
+/* 6. Icon Button (header actions)
+   ------------------------------------------------------------ */
+.btn-icon {
+    background: transparent !important;
+    border: none !important;
+    color: #ffffff !important;
+    cursor: pointer !important;
+    border-radius: 6px !important;
+    transition: background-color 0.15s ease !important;
+}
+.btn-icon:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 7. Provider Badge
+   ------------------------------------------------------------ */
+.provider-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 6px !important;
+    padding: 4px 10px !important;
+    font-size: 12px !important;
+    color: #ffffff !important;
+}
+.provider-value {
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    font-size: 12px !important;
+}
+
+/* 8. Drop Zone
+   ------------------------------------------------------------ */
+.drop-zone {
+    border: 2px dashed #b0c4c4 !important;
+    border-radius: 12px !important;
+    min-height: 140px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: border-color 0.2s ease, background-color 0.2s ease !important;
+    background-color: transparent !important;
+    padding: 20px !important;
+}
+.drop-zone:hover {
+    border-color: var(--primary) !important;
+    background-color: rgba(14, 149, 148, 0.04) !important;
+}
+
+/* 9. Drop Zone — Drag Over State
+   ------------------------------------------------------------ */
+.drop-zone.drag-over {
+    border-color: var(--primary) !important;
+    background-color: rgba(14, 149, 148, 0.08) !important;
+}
+
+/* 10. Drop Icon
+   ------------------------------------------------------------ */
+.drop-icon {
+    font-size: 2.8rem !important;
+    color: var(--primary) !important;
+    margin-bottom: 8px !important;
+}
+
+/* 11. Drop Zone Text
+   ------------------------------------------------------------ */
+.drop-main-text {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    margin-bottom: 4px !important;
+}
+.drop-sub-text {
+    font-size: 12px !important;
+    color: var(--text-muted) !important;
+}
+
+/* 12. File Card
+   ------------------------------------------------------------ */
+.file-card {
+    background-color: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    transition: border-color 0.15s ease !important;
+}
+.file-card:hover {
+    border-color: var(--primary) !important;
+}
+
+/* 13. File Card — Processing State
+   ------------------------------------------------------------ */
+.file-card.status-processing {
+    border-left: 3px solid var(--primary) !important;
+}
+
+/* 14. File Card — Complete State
+   ------------------------------------------------------------ */
+.file-card.status-complete {
+    border-left: 3px solid var(--success) !important;
+    opacity: 0.7 !important;
+}
+
+/* 15. File Card — Error State
+   ------------------------------------------------------------ */
+.file-card.status-error {
+    border-left: 3px solid var(--error) !important;
+}
+
+/* 16. File Name / Detail
+   ------------------------------------------------------------ */
+.file-name {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+.file-detail {
+    font-size: 11px !important;
+    color: var(--text-muted) !important;
+}
+
+/* 17. Status Badges
+   ------------------------------------------------------------ */
+.badge-waiting {
+    background-color: var(--border) !important;
+    color: var(--text-muted) !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    border-radius: 10px !important;
+    font-weight: 500 !important;
+}
+.badge-processing {
+    background-color: rgba(14, 149, 148, 0.12) !important;
+    color: var(--primary) !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+}
+.badge-complete {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+    color: var(--success) !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    border-radius: 10px !important;
+    font-weight: 500 !important;
+}
+.badge-error {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    color: var(--error) !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    border-radius: 10px !important;
+    font-weight: 500 !important;
+}
+
+/* 18. Start Button
+   ------------------------------------------------------------ */
+.btn-start {
+    background-color: var(--accent) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 24px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease, opacity 0.15s ease !important;
+}
+.btn-start:hover {
+    background-color: #d9461f !important;
+}
+.btn-start:disabled,
+.btn-start[disabled] {
+    opacity: 0.45 !important;
+    cursor: not-allowed !important;
+}
+
+/* 19. Stop Button
+   ------------------------------------------------------------ */
+.btn-stop {
+    background-color: #D9534F !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 24px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease !important;
+}
+.btn-stop:hover {
+    background-color: #c9302c !important;
+}
+
+/* 20. Secondary Button
+   ------------------------------------------------------------ */
+.btn-secondary {
+    background-color: #e2e8f0 !important;
+    color: var(--text-primary) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease !important;
+}
+.btn-secondary:hover {
+    background-color: #cbd5e1 !important;
+}
+
+/* 21. Progress Section
+   ------------------------------------------------------------ */
+.progress-section {
+    background-color: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    padding: 16px 20px !important;
+}
+
+/* 22. Quasar Linear Progress — Bar Override
+   ------------------------------------------------------------ */
+.q-linear-progress__model {
+    background-color: #0e9594 !important;
+}
+
+/* 23. Quasar Linear Progress — Track Override
+   ------------------------------------------------------------ */
+.q-linear-progress__track {
+    background: #dde9e9 !important;
+}
+
+/* 24. Progress Labels
+   ------------------------------------------------------------ */
+.progress-file-label {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+}
+.progress-page-label {
+    font-size: 12px !important;
+    color: var(--text-muted) !important;
+}
+
+/* 25. Log Panel Header
+   ------------------------------------------------------------ */
+.log-panel-header {
+    cursor: pointer !important;
+    padding: 10px 14px !important;
+    border-radius: 8px !important;
+    transition: background-color 0.15s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    user-select: none !important;
+}
+.log-panel-header:hover {
+    background-color: rgba(14, 149, 148, 0.06) !important;
+}
+
+/* 26. Log Body
+   ------------------------------------------------------------ */
+.log-body {
+    background-color: #1e293b !important;
+    color: #94a3b8 !important;
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas",
+        "Menlo", monospace !important;
+    font-size: 0.78rem !important;
+    line-height: 1.5 !important;
+    padding: 12px 14px !important;
+    border-radius: 8px !important;
+    overflow-y: auto !important;
+    max-height: 260px !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+}
+
+/* 27. Status Bar
+   ------------------------------------------------------------ */
+.status-bar {
+    border-top: 1px solid var(--border) !important;
+    padding: 6px 16px !important;
+    font-size: 11px !important;
+    color: var(--text-muted) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+/* 28. Settings Dialog
+   ------------------------------------------------------------ */
+.settings-dialog .q-dialog__inner > .q-card {
+    min-width: 600px !important;
+    max-width: 700px !important;
+    border-radius: 12px !important;
+}
+
+/* 29. Settings Section Title
+   ------------------------------------------------------------ */
+.settings-section-title {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    border-bottom: 2px solid var(--primary) !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 12px !important;
+}
+
+/* 30. Quasar Card Override
+   ------------------------------------------------------------ */
+.q-card {
+    background-color: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+    border-radius: 10px !important;
+}
+
+/* 31. Scrollbar
+   ------------------------------------------------------------ */
+::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+}
+::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+::-webkit-scrollbar-thumb {
+    background-color: var(--primary) !important;
+    border-radius: 3px !important;
+}
+::-webkit-scrollbar-thumb:hover {
+    background-color: #0b7a79 !important;
+}
+
+/* 32. Utility — Ensure overrides survive Tailwind resets
+   ------------------------------------------------------------ */
+.nicegui-content * {
+    box-sizing: border-box;
+}
