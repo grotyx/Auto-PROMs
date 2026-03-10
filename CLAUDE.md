@@ -106,7 +106,7 @@ CSV output (35+ fields)
 - **Concurrency**: `ThreadPoolExecutor` + `SimpleRateLimiter` (semaphore), config에서 on/off
 - **GUI Framework**: NiceGUI 3.x + pywebview (native desktop window, no browser needed)
 - **CSS**: Inline `<style>` injection (`_QUASAR_STYLE_OVERRIDES`) + cache-busted static CSS
-- **Upload**: `ui.upload` for file selection + drag-and-drop (cross-platform)
+- **Upload**: `ui.upload` for file selection + drag-and-drop; files staged in `uploaded_pdfs/` (separate from `temp_images/` which is wiped per-file)
 - **Config**: `python-dotenv` for API keys, `config.json` for runtime settings
 - **EQ-5D Caching**: `SurveyValidator._eq5d_table` class variable, loaded once
 - **Package structure**: `core/` (relative imports), `gui_ng/` (relative imports), `data/` (static)
@@ -175,6 +175,6 @@ OPENAI_API_KEY=sk-proj-xxx
 ## Platform Notes
 
 - **Path**: `pathlib.Path` throughout (cross-platform backslash handling)
-- **Upload**: `ui.upload` with drag-and-drop (cross-platform)
+- **Upload**: `ui.upload` with drag-and-drop; staged in `uploaded_pdfs/` (cross-platform)
 - **Build**: PyInstaller single-file executable
 - **Native Window**: pywebview — WKWebView (macOS), Edge WebView2 (Windows)
