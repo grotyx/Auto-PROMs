@@ -165,14 +165,16 @@ def _build_drop_zone(pdf_files: List[str], file_card_elements: Dict) -> None:
 async def _handle_upload(event, pdf_files: List[str], file_card_elements: Dict) -> None:
     """Handle file selected via the upload widget (click-to-browse or drag-and-drop).
     NiceGUI 3.x: event.file is a FileUpload with async .save() / .read().
+    Uploaded PDFs are saved to 'uploaded_pdfs/' (separate from 'temp_images/'
+    which is wiped between file processing runs).
     """
     from core import PROJECT_ROOT
 
-    temp_dir = PROJECT_ROOT / 'temp_images'
-    temp_dir.mkdir(parents=True, exist_ok=True)
+    upload_dir = PROJECT_ROOT / 'uploaded_pdfs'
+    upload_dir.mkdir(parents=True, exist_ok=True)
 
     name = event.file.name
-    dest = temp_dir / name
+    dest = upload_dir / name
     await event.file.save(str(dest))
     _add_files([str(dest)], pdf_files, file_card_elements)
 
@@ -580,6 +582,14 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
         for logger in loggers:
             logger.removeHandler(file_handler)
         file_handler.close()
+
+        # Clean up uploaded PDFs staging directory
+        upload_dir = os.path.join(base_dir, 'uploaded_pdfs')
+        if os.path.exists(upload_dir):
+            try:
+                shutil.rmtree(upload_dir)
+            except Exception:
+                pass
 
 
 def _log(state: Dict, message: str) -> None:
