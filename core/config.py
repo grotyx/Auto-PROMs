@@ -56,7 +56,7 @@ class ConfigManager:
                 self._create_default_config()
                 print(f"Created default config at: {self.config_path}")
                 # GUI 모드에서는 종료하지 않고 기본 설정 사용
-                if 'gui' in sys.modules or 'tkinter' in sys.modules:
+                if any(m in sys.modules for m in ('gui', 'tkinter', 'nicegui')):
                     print("Using default configuration. Please update API key in Settings.")
                     return DEFAULT_CONFIG
                 else:
@@ -102,7 +102,7 @@ class ConfigManager:
             raise ValueError("API provider must be 'openai' or 'claude'")
 
         # .env 파일 존재 확인 (CLI 모드에서만 경고)
-        is_gui_mode = 'gui' in sys.modules or 'tkinter' in sys.modules
+        is_gui_mode = any(m in sys.modules for m in ('gui', 'tkinter', 'nicegui'))
         if not is_gui_mode:
             api_key = self.get_api_key_for_provider(api_provider)
             if not api_key:
