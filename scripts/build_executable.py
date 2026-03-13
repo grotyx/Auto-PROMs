@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Auto Spine Survey v2.1.1 - Build Script
+Auto Spine Survey v2.2.0 - Build Script
 Builds GUI executable using PyInstaller.
 
 Usage:
@@ -12,7 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-VERSION = "2.1.1"
+VERSION = "2.2.0"
 APP_NAME = "AutoSpineSurvey"
 
 # Data files to bundle (paths relative to project root)
@@ -284,11 +284,12 @@ def create_portable_package() -> bool:
 
 Setup
 -----
-1. Copy .env.example to .env and fill in your API keys:
+1. Copy .env.example to .env and fill in your API key:
+   - GEMINI_API_KEY for Google Gemini (default)
    - CLAUDE_API_KEY for Claude (Anthropic)
    - OPENAI_API_KEY for OpenAI
 
-2. Edit config.json to select your provider ("claude" or "openai").
+2. Edit config.json to select your provider ("gemini", "claude", or "openai").
 
 3. Place PDF survey files in the input_pdfs/ folder.
 
@@ -300,7 +301,7 @@ Usage
 Results are saved to output_csv/. Logs are in logs/.
 
 Supported Surveys: VAS, ODI, EQ-5D-5L, painDETECT
-Supported Models: Claude Haiku 4.5, GPT-5 mini
+Supported Models: Gemini 3.1 Flash Lite (default), Claude Haiku 4.5, GPT-5 mini
 """
     (package_dir / "README.txt").write_text(readme, encoding="utf-8")
 
