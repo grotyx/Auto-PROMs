@@ -19,9 +19,10 @@ load_dotenv(dotenv_path=_env_path)
 # 기본 설정값 (API 키는 .env에서 관리)
 DEFAULT_CONFIG = {
     "api_settings": {
-        "provider": "claude",
+        "provider": "gemini",
         "openai_model": "gpt-5-mini",
-        "claude_model": "claude-haiku-4-5-20251001"
+        "claude_model": "claude-haiku-4-5-20251001",
+        "gemini_model": "gemini-3.1-flash-lite-preview"
     },
     "folders": {
         "input_folder": "input_pdfs",
@@ -98,8 +99,8 @@ class ConfigManager:
 
         # API 설정 확인
         api_provider = config["api_settings"].get("provider", "").lower()
-        if api_provider not in ["openai", "claude"]:
-            raise ValueError("API provider must be 'openai' or 'claude'")
+        if api_provider not in ["openai", "claude", "gemini"]:
+            raise ValueError("API provider must be 'openai', 'claude', or 'gemini'")
 
         # .env 파일 존재 확인 (CLI 모드에서만 경고)
         is_gui_mode = any(m in sys.modules for m in ('gui', 'tkinter', 'nicegui'))
@@ -119,6 +120,8 @@ class ConfigManager:
             model = config["api_settings"].get("openai_model", "Unknown")
         elif provider == "claude":
             model = config["api_settings"].get("claude_model", "Unknown")
+        elif provider == "gemini":
+            model = config["api_settings"].get("gemini_model", "Unknown")
         else:
             model = "Unknown"
 
@@ -142,6 +145,8 @@ class ConfigManager:
             return os.getenv("OPENAI_API_KEY", "")
         elif provider == "claude":
             return os.getenv("CLAUDE_API_KEY", "")
+        elif provider == "gemini":
+            return os.getenv("GEMINI_API_KEY", "")
         return ""
 
     def get_api_key(self) -> str:
@@ -149,7 +154,12 @@ class ConfigManager:
         provider = self.config["api_settings"]["provider"].lower()
         key = self.get_api_key_for_provider(provider)
         if not key:
-            env_var = "OPENAI_API_KEY" if provider == "openai" else "CLAUDE_API_KEY"
+            env_vars = {
+                "openai": "OPENAI_API_KEY",
+                "claude": "CLAUDE_API_KEY",
+                "gemini": "GEMINI_API_KEY",
+            }
+            env_var = env_vars.get(provider, "API_KEY")
             raise ValueError(
                 f"{env_var} not found in environment. "
                 f"Please set it in the .env file at {_env_path}"
@@ -163,6 +173,8 @@ class ConfigManager:
             return self.config["api_settings"].get("openai_model", "gpt-5-mini")
         elif provider == "claude":
             return self.config["api_settings"].get("claude_model", "claude-haiku-4-5-20251001")
+        elif provider == "gemini":
+            return self.config["api_settings"].get("gemini_model", "gemini-3.1-flash-lite-preview")
         else:
             raise ValueError(f"Unknown API provider: {provider}")
 
@@ -252,5 +264,12 @@ def load_config() -> 'ConfigManager':
     global _config_manager
     if _config_manager is None:
         _config_manager = ConfigManager()
+    return _config_manager
+
+
+def reload_config() -> 'ConfigManager':
+    """설정 관리자를 강제로 다시 로드 (설정 변경 후 호출)"""
+    global _config_manager
+    _config_manager = ConfigManager()
     return _config_manager
 
