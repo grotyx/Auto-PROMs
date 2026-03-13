@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import threading
+import time
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -168,12 +169,36 @@ class BaseProcessor(ABC):
             )
             return None
 
-        # Call provider-specific API (rate-limited for concurrent use)
-        self._rate_limiter.acquire()
-        try:
-            content = self._call_api(encoded_image, page_num)
-        finally:
-            self._rate_limiter.release()
+        # Call provider-specific API (rate-limited, with retry)
+        max_retries = 2
+        content = None
+        last_error = None
+
+        for attempt in range(max_retries + 1):
+            self._rate_limiter.acquire()
+            try:
+                content = self._call_api(encoded_image, page_num)
+                break
+            except Exception as e:
+                last_error = e
+                if attempt < max_retries:
+                    wait = 2 ** attempt  # 1s, 2s
+                    self.logger.warning(
+                        f"Page {page_num + 1} API call failed (attempt "
+                        f"{attempt + 1}/{max_retries + 1}): {e}. "
+                        f"Retrying in {wait}s..."
+                    )
+                    time.sleep(wait)
+                else:
+                    self.logger.error(
+                        f"Page {page_num + 1} failed after "
+                        f"{max_retries + 1} attempts: {e}"
+                    )
+            finally:
+                self._rate_limiter.release()
+
+        if content is None:
+            return None
 
         # Parse JSON response
         try:

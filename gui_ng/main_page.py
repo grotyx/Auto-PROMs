@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
@@ -27,7 +28,7 @@ _state: Dict = {
     "current_file": "대기 중...",
     "page_detail": "0 / 0 페이지 완료",
     "log_lines": [],
-    "result": None,       # {"output_file": str, "count": int}
+    "result": None,       # {"output_file": str, "count": int, "failed": int, "surveys": int, "elapsed": str}
     "error": None,
     "processed_files": set(),
     "_log_last_len": 0,
@@ -366,14 +367,21 @@ def _update_clock() -> None:
 def _build_result_dialog() -> None:
     """Pre-create the completion dialog so it can be opened from async context."""
     with ui.dialog() as dlg:
-        with ui.card().classes('p-6'):
-            with ui.row().classes('items-center gap-2 mb-1'):
+        with ui.card().classes('p-6').style('min-width: 340px'):
+            with ui.row().classes('items-center gap-2 mb-2'):
                 ui.label('check_circle').classes('material-icons').style(
                     'color: #10b981; font-size: 22px'
                 )
                 _ui['result_title'] = ui.label('').classes('text-base font-semibold')
-            _ui['result_filename'] = ui.label('').classes('text-sm text-gray-500 mt-1')
-            with ui.row().classes('w-full justify-end gap-2 mt-4'):
+
+            # Summary stats grid
+            with ui.column().classes('w-full gap-1 mb-3').style(
+                'background: #f8fafc; border-radius: 8px; padding: 12px;'
+            ):
+                _ui['result_stats'] = ui.html('').classes('text-sm')
+
+            _ui['result_filename'] = ui.label('').classes('text-sm text-gray-500')
+            with ui.row().classes('w-full justify-end gap-2 mt-3'):
                 ui.button(
                     'CSV 열기',
                     icon='open_in_new',
@@ -479,7 +487,9 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
 
         _log(state, f"처리 시작 - 총 {len(pdf_files)}개 파일")
 
+        pipeline_start = time.time()
         all_survey_data = []
+        failed_files = []
         total_pages = 0
         file_page_counts = []
 
@@ -541,8 +551,12 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
                     all_survey_data.extend(survey_data)
                     state['processed_files'].add(pdf_path)
                     _log(state, f"완료: {fname} - {len(survey_data)}개 데이터")
+                else:
+                    failed_files.append(fname)
+                    _log(state, f"실패: {fname} - 데이터 추출 없음")
 
             except Exception as e:
+                failed_files.append(fname)
                 error_msg = f"오류 ({fname}): {str(e)}"
                 logging.error(error_msg, exc_info=True)
                 _log(state, f"ERROR: {error_msg}")
@@ -577,9 +591,17 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
 
             if df is not None:
                 count = len(state['processed_files'])
+                elapsed = time.time() - pipeline_start
+                elapsed_str = f"{int(elapsed // 60)}분 {int(elapsed % 60)}초" if elapsed >= 60 else f"{elapsed:.1f}초"
                 _log(state, f"CSV 생성 완료: {output_path}")
-                _log(state, f"총 {count}개 파일 처리 완료")
-                state['result'] = {'output_file': output_path, 'count': count}
+                _log(state, f"총 {count}개 파일 처리 완료 (소요: {elapsed_str})")
+                state['result'] = {
+                    'output_file': output_path,
+                    'count': count,
+                    'failed': len(failed_files),
+                    'surveys': len(all_survey_data),
+                    'elapsed': elapsed_str,
+                }
 
     except Exception as e:
         logging.error(f"치명적 오류: {str(e)}", exc_info=True)
@@ -650,6 +672,11 @@ def _poll_state(pdf_files: List[str], file_card_elements: Dict) -> None:
 def _complete_processing(
     output_file: str, count: int, pdf_files: List[str], file_card_elements: Dict
 ) -> None:
+    result = _state.get('result', {})
+    failed = result.get('failed', 0)
+    surveys = result.get('surveys', 0)
+    elapsed = result.get('elapsed', '')
+
     _set_status(f'완료: {count}개 파일 처리됨')
     _state['log_lines'].append(
         f"[{datetime.now().strftime('%H:%M:%S')}] 처리 완료: {count}개 파일"
@@ -657,6 +684,19 @@ def _complete_processing(
 
     _state['_output_file'] = output_file
     _ui['result_title'].set_text(f'{count}개 파일이 성공적으로 처리되었습니다.')
+
+    # Build summary stats HTML
+    stats_lines = [
+        f'<b>성공:</b> {count}개 파일 &nbsp;/&nbsp; <b>설문:</b> {surveys}건',
+    ]
+    if failed > 0:
+        stats_lines.append(
+            f'<span style="color:#ef4444"><b>실패:</b> {failed}개 파일</span>'
+        )
+    if elapsed:
+        stats_lines.append(f'<b>소요 시간:</b> {elapsed}')
+    _ui['result_stats'].set_content('<br>'.join(stats_lines))
+
     _ui['result_filename'].set_text(f'결과: {os.path.basename(output_file)}')
     _ui['result_dialog'].open()
 
