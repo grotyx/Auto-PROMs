@@ -1,4 +1,4 @@
-# Auto Spine Survey v2.1.1
+# Auto Spine Survey v2.2.0
 
 AI-powered spine surgery PROMs (Patient-Reported Outcome Measures) PDF data extraction system.
 
@@ -13,7 +13,8 @@ Automatically analyzes spine surgery PROMs PDF files using AI vision APIs and ex
 - **painDETECT** — Neuropathic pain assessment
 
 ### Supported AI Models
-- **Claude Haiku 4.5** (`claude-haiku-4-5-20251001`) — Anthropic (default)
+- **Gemini 3.1 Flash Lite** (`gemini-3.1-flash-lite-preview`) — Google (default)
+- **Claude Haiku 4.5** (`claude-haiku-4-5-20251001`) — Anthropic
 - **GPT-5 mini** (`gpt-5-mini`) — OpenAI
 
 ## Quick Start
@@ -33,10 +34,11 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Edit `.env` with your API keys:
+Edit `.env` with your API keys (only the provider you use is required):
 ```
 CLAUDE_API_KEY=sk-ant-your-key-here
 OPENAI_API_KEY=sk-proj-your-key-here
+GEMINI_API_KEY=your-gemini-key-here
 ```
 
 ### 3. Run
@@ -52,7 +54,7 @@ python app.py
 - **Click to select** — PDF file picker via native OS dialog
 - **Drag-and-drop** — Drop PDF files directly onto the upload zone
 - **Concurrent processing** — Parallel page API calls via ThreadPoolExecutor
-- **Dual AI support** — Switch between Claude (default) and OpenAI at runtime
+- **Triple AI support** — Switch between Gemini (default), Claude, and OpenAI at runtime
 - **EQ-5D value calculation** — Automatic lookup from Korean value set table
 - **Real-time progress** — Per-page progress bar during AI processing
 
@@ -89,7 +91,8 @@ Auto_PROMs_PSM_4_GUI/
 │   ├── __init__.py           # PROJECT_ROOT, DATA_DIR
 │   ├── config.py             # ConfigManager (dotenv + pathlib)
 │   ├── base_processor.py     # Abstract base AI processor
-│   ├── claude_processor.py   # Claude API processor (default)
+│   ├── gemini_processor.py   # Gemini API processor (default)
+│   ├── claude_processor.py   # Claude API processor
 │   ├── openai_processor.py   # OpenAI API processor
 │   ├── validators.py         # Survey data validation + EQ-5D cache
 │   ├── pdf_processor.py      # PDF → image conversion (PyMuPDF)
@@ -127,9 +130,10 @@ Auto_PROMs_PSM_4_GUI/
 ```json
 {
     "api_settings": {
-        "provider": "claude",
+        "provider": "gemini",
+        "openai_model": "gpt-5-mini",
         "claude_model": "claude-haiku-4-5-20251001",
-        "openai_model": "gpt-5-mini"
+        "gemini_model": "gemini-3.1-flash-lite-preview"
     },
     "folders": {
         "input_folder": "input_pdfs",
@@ -161,22 +165,20 @@ python scripts/build_executable.py
 ```
 
 Output:
-- `dist/AutoSpineSurvey` (or `.exe` on Windows)
+- `dist/AutoSpineSurvey/` — onedir build (exe + dependencies)
 - `AutoSpineSurvey_Portable/` — ready-to-distribute package
 
 ### Portable Package Contents
 ```
 AutoSpineSurvey_Portable/
-├── AutoSpineSurvey(.exe)
+├── AutoSpineSurvey(.exe)    # + bundled dependencies
+├── _internal/               # PyInstaller runtime files
 ├── config.json              # Settings (no API keys)
 ├── .env.example             # API key template
-├── data/
-│   ├── page_instruction.json
-│   └── eq5d_value_k.csv
 ├── input_pdfs/
 ├── output_csv/
 ├── logs/
-└── README.txt
+└── temp_images/
 ```
 
 > **Note**: Users must create their own `.env` with API keys. The portable package never includes secrets.
@@ -185,7 +187,7 @@ AutoSpineSurvey_Portable/
 
 | Problem | Solution |
 |---------|----------|
-| `CLAUDE_API_KEY not found` | Create `.env` file with your API key. See `.env.example`. |
+| `API_KEY not found` | Create `.env` file with your API key for the selected provider. See `.env.example`. |
 | No PDF files found | Use the upload zone in GUI to select files. |
 | Dependency errors | Ensure Python 3.9+, activate virtualenv, then `pip install -r requirements.txt`. |
 | GUI won't start | Install GUI deps: `pip install nicegui pywebview` |
@@ -195,7 +197,15 @@ Detailed logs: `logs/spine_survey_*.log`
 
 ## Version History
 
-### v2.1.1 (Current)
+### v2.2.0 (Current)
+- Google Gemini support added (`gemini-3.1-flash-lite-preview` as new default)
+- Triple AI provider support: Gemini, Claude, OpenAI — switchable at runtime
+- Settings UI simplified: unified model dropdown per provider, API keys managed via `.env` only
+- Build changed from PyInstaller onefile to onedir for faster startup
+- PDF files sorted by filename before processing
+- Config hot-reload (`reload_config()`) for seamless provider switching
+
+### v2.1.1
 - GUI migrated from CustomTkinter to NiceGUI 3.x + pywebview (native desktop window)
 - Color scheme: "Refreshing Summer Fun" (ocean blue + amber + orange)
 - Material Icons throughout (replaced emoji icons)
@@ -218,4 +228,4 @@ Detailed logs: `logs/spine_survey_*.log`
 
 ## License
 
-Copyright 2025 Sang-Min Park, Department of Orthopaedic Surgery, Seoul National University College of Medicine. All rights reserved.
+Copyright 2025-2026 Sang-Min Park, Department of Orthopaedic Surgery, Seoul National University College of Medicine. All rights reserved.

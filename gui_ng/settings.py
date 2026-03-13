@@ -12,33 +12,33 @@ from core import PROJECT_ROOT
 _ENV_PATH = PROJECT_ROOT / '.env'
 _CONFIG_PATH = PROJECT_ROOT / 'config.json'
 
+# 프로바이더별 모델 목록
+_MODEL_OPTIONS = {
+    'claude': [
+        'claude-haiku-4-5-20251001',
+        'claude-sonnet-4-5-20250929',
+    ],
+    'openai': [
+        'gpt-5-mini',
+        'gpt-5-nano',
+    ],
+    'gemini': [
+        'gemini-3.1-flash-lite-preview',
+        'gemini-3-flash-preview',
+    ],
+}
+
+# 프로바이더별 기본 모델
+_DEFAULT_MODELS = {
+    'claude': 'claude-haiku-4-5-20251001',
+    'openai': 'gpt-5-mini',
+    'gemini': 'gemini-3.1-flash-lite-preview',
+}
+
 
 # ------------------------------------------------------------------
 # Helper functions
 # ------------------------------------------------------------------
-
-def _load_env_key(key: str) -> str:
-    """Load an API key from .env (re-read file each time)."""
-    load_dotenv(dotenv_path=_ENV_PATH, override=True)
-    return os.getenv(key, '')
-
-
-def _save_env_keys(claude_key: str, openai_key: str):
-    """Save API keys to .env file and update os.environ."""
-    lines = []
-    if claude_key:
-        lines.append(f'CLAUDE_API_KEY={claude_key}')
-    if openai_key:
-        lines.append(f'OPENAI_API_KEY={openai_key}')
-
-    with open(_ENV_PATH, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines) + '\n')
-
-    if claude_key:
-        os.environ['CLAUDE_API_KEY'] = claude_key
-    if openai_key:
-        os.environ['OPENAI_API_KEY'] = openai_key
-
 
 def _load_config() -> dict:
     """Load config.json and return as dict."""
@@ -83,17 +83,16 @@ def _browse_folder_native(input_el):
 # ------------------------------------------------------------------
 
 def _save_and_close(dialog, config, api_state, folder_state, proc_state, out_state, on_saved):
-    """Collect all state, write .env + config.json, close dialog."""
+    """Collect all state, write config.json, close dialog."""
     config['api_settings'] = {
         'provider': api_state['provider'],
         'claude_model': api_state['claude_model'],
         'openai_model': api_state['openai_model'],
+        'gemini_model': api_state['gemini_model'],
     }
     config['folders'] = dict(folder_state)
     config['processing'] = dict(proc_state)
     config['output'] = dict(out_state)
-
-    _save_env_keys(api_state['claude_key'], api_state['openai_key'])
 
     if _save_config(config):
         ui.notify('설정이 저장되었습니다.', type='positive')
@@ -117,11 +116,10 @@ def build_settings_dialog(on_saved: Optional[Callable] = None):
 
     # Reactive state dicts
     api_state = {
-        'provider': api_cfg.get('provider', 'claude'),
-        'claude_key': _load_env_key('CLAUDE_API_KEY'),
+        'provider': api_cfg.get('provider', 'gemini'),
         'claude_model': api_cfg.get('claude_model', 'claude-haiku-4-5-20251001'),
-        'openai_key': _load_env_key('OPENAI_API_KEY'),
         'openai_model': api_cfg.get('openai_model', 'gpt-5-mini'),
+        'gemini_model': api_cfg.get('gemini_model', 'gemini-3.1-flash-lite-preview'),
     }
 
     folder_state = {
@@ -163,52 +161,48 @@ def build_settings_dialog(on_saved: Optional[Callable] = None):
             with ui.tab_panel(api_tab):
                 ui.label('AI 프로바이더').classes('settings-section-title')
                 provider_radio = ui.radio(
-                    {'claude': 'Claude (기본)', 'openai': 'OpenAI GPT'},
+                    {'claude': 'Claude', 'openai': 'OpenAI GPT', 'gemini': 'Google Gemini'},
                     value=api_state['provider'],
                 ).props('inline')
-                provider_radio.on_value_change(
-                    lambda e: api_state.update({'provider': e.value})
-                )
 
-                # Claude section
-                ui.label('Claude 설정').classes('settings-section-title mt-4')
-                claude_key_input = ui.input(
-                    'API Key',
-                    value=api_state['claude_key'],
-                    password=True,
-                    password_toggle_button=True,
-                ).classes('w-full')
-                claude_key_input.on_value_change(
-                    lambda e: api_state.update({'claude_key': e.value})
-                )
+                ui.label('모델 선택').classes('settings-section-title mt-4')
 
-                claude_model_input = ui.input(
-                    '모델',
-                    value=api_state['claude_model'],
-                ).classes('w-full')
-                claude_model_input.on_value_change(
-                    lambda e: api_state.update({'claude_model': e.value})
-                )
+                # 모델 키 매핑
+                _model_keys = {
+                    'claude': 'claude_model',
+                    'openai': 'openai_model',
+                    'gemini': 'gemini_model',
+                }
 
-                # OpenAI section
-                ui.label('OpenAI 설정').classes('settings-section-title mt-4')
-                openai_key_input = ui.input(
-                    'API Key',
-                    value=api_state['openai_key'],
-                    password=True,
-                    password_toggle_button=True,
+                # 현재 provider의 모델 옵션으로 select 생성
+                cur_provider = api_state['provider']
+                model_select = ui.select(
+                    options=_MODEL_OPTIONS.get(cur_provider, []),
+                    value=api_state[_model_keys[cur_provider]],
+                    label='모델',
                 ).classes('w-full')
-                openai_key_input.on_value_change(
-                    lambda e: api_state.update({'openai_key': e.value})
-                )
 
-                openai_model_input = ui.input(
-                    '모델',
-                    value=api_state['openai_model'],
-                ).classes('w-full')
-                openai_model_input.on_value_change(
-                    lambda e: api_state.update({'openai_model': e.value})
-                )
+                def _on_provider_change(e):
+                    provider = e.value
+                    api_state['provider'] = provider
+                    options = _MODEL_OPTIONS.get(provider, [])
+                    model_key = _model_keys[provider]
+                    current_model = api_state[model_key]
+                    # 현재 모델이 옵션에 없으면 기본 모델로
+                    if current_model not in options:
+                        current_model = _DEFAULT_MODELS.get(provider, options[0])
+                        api_state[model_key] = current_model
+                    model_select.options = options
+                    model_select.set_value(current_model)
+                    model_select.update()
+
+                def _on_model_change(e):
+                    provider = api_state['provider']
+                    model_key = _model_keys[provider]
+                    api_state[model_key] = e.value
+
+                provider_radio.on_value_change(_on_provider_change)
+                model_select.on_value_change(_on_model_change)
 
             # ============================================================
             # 폴더 설정 탭

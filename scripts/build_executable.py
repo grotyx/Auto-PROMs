@@ -44,6 +44,9 @@ HIDDEN_IMPORTS = [
     "core.pdf_processor",
     "core.csv_generator",
     "core.validators",
+    "core.gemini_processor",
+    "google.genai",
+    "google.genai.types",
     # NiceGUI / web stack
     "nicegui",
     "nicegui.elements",
@@ -170,10 +173,8 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
     [],
+    exclude_binaries=True,
     name='{APP_NAME}',
     debug=False,
     bootloader_ignore_signals=False,
@@ -189,6 +190,17 @@ exe = EXE(
     entitlements_file=None,
     icon=None,
     windowed=True,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='{APP_NAME}',
 )
 """
     return spec
@@ -243,15 +255,15 @@ def create_portable_package() -> bool:
     # Clean previous package
     if package_dir.exists():
         shutil.rmtree(package_dir)
-    package_dir.mkdir()
 
-    # Copy executable
     exe_name = f"{APP_NAME}.exe" if sys.platform == "win32" else APP_NAME
-    exe_source = root / "dist" / exe_name
-    if not exe_source.exists():
-        print(f"[FAIL] Executable not found: {exe_source}")
+
+    # Copy entire onedir output (dist/AutoSpineSurvey/) as the portable package
+    dist_dir = root / "dist" / APP_NAME
+    if not dist_dir.exists():
+        print(f"[FAIL] dist/{APP_NAME}/ not found")
         return False
-    shutil.copy2(exe_source, package_dir)
+    shutil.copytree(dist_dir, package_dir)
 
     # Copy config.json (no API keys — keys are in .env only)
     config_path = root / "config.json"
@@ -262,13 +274,6 @@ def create_portable_package() -> bool:
     env_example = root / ".env.example"
     if env_example.exists():
         shutil.copy2(env_example, package_dir / ".env.example")
-
-    # Copy data files (excluding secrets)
-    (package_dir / "data").mkdir(exist_ok=True)
-    for data_file in ["data/page_instruction.json", "data/eq5d_value_k.csv"]:
-        src = root / data_file
-        if src.exists():
-            shutil.copy2(src, package_dir / data_file)
 
     # Create working directories
     for folder in ["input_pdfs", "output_csv", "temp_images", "logs"]:

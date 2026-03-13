@@ -127,7 +127,8 @@ def build_page() -> None:
 def _build_header() -> None:
     config = ConfigManager()
     provider = config.get_provider()
-    model_name = "Claude Haiku 4.5" if provider == "claude" else "GPT-5 mini"
+    model_names = {"claude": "Claude Haiku 4.5", "openai": "GPT-5 mini", "gemini": "Gemini"}
+    model_name = model_names.get(provider, provider)
 
     with ui.row().classes('app-header w-full items-center justify-between'):
         with ui.column().classes('gap-0'):
@@ -340,7 +341,8 @@ def _build_log_panel() -> None:
 def _build_status_bar() -> None:
     config = ConfigManager()
     provider = config.get_provider()
-    model_text = "Claude Haiku 4.5" if provider == "claude" else "GPT-5 mini"
+    model_names = {"claude": "Claude Haiku 4.5", "openai": "GPT-5 mini", "gemini": "Gemini"}
+    model_text = model_names.get(provider, provider)
 
     with ui.row().classes('status-bar w-full items-center justify-between'):
         with ui.row().classes('items-center gap-3'):
@@ -411,7 +413,9 @@ async def _start_processing(pdf_files: List[str], file_card_elements: Dict) -> N
     for p in pdf_files:
         _update_file_card_status(p, 'processing', '', file_card_elements)
 
-    await run.io_bound(_run_pipeline, list(pdf_files), _state)
+    # 파일명 기준 정렬 (업로드 순서와 관계없이 이름순 처리)
+    sorted_files = sorted(pdf_files, key=lambda p: os.path.basename(p).lower())
+    await run.io_bound(_run_pipeline, sorted_files, _state)
 
     _state['is_processing'] = False
     _ui['stop_btn'].disable()
@@ -435,6 +439,7 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
     from core.pdf_processor import PDFProcessor
     from core.claude_processor import ClaudeProcessor
     from core.openai_processor import OpenAIProcessor
+    from core.gemini_processor import GeminiProcessor
     from core.csv_generator import CSVGenerator
     from core import PROJECT_ROOT
 
@@ -505,6 +510,8 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
                 provider = config_manager.get_provider()
                 if provider == 'openai':
                     ai_processor = OpenAIProcessor(api_key)
+                elif provider == 'gemini':
+                    ai_processor = GeminiProcessor(api_key)
                 else:
                     ai_processor = ClaudeProcessor(api_key)
 
@@ -714,9 +721,12 @@ def open_settings() -> None:
 
 
 def _refresh_provider_label() -> None:
+    from core.config import reload_config
+    reload_config()  # 설정 파일 다시 로드
     config = ConfigManager()
     provider = config.get_provider()
-    model_name = "Claude Haiku 4.5" if provider == "claude" else "GPT-5 mini"
+    model_names = {"claude": "Claude Haiku 4.5", "openai": "GPT-5 mini", "gemini": "Gemini"}
+    model_name = model_names.get(provider, provider)
     if 'provider_label' in _ui:
         _ui['provider_label'].set_text(model_name)
     if 'model_label' in _ui:

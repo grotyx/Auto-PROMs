@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Auto Spine Survey v2.1.1 — AI 기반 척추 설문지(PROMs) 데이터 자동 추출 시스템.
+Auto Spine Survey v2.2.0 — AI 기반 척추 설문지(PROMs) 데이터 자동 추출 시스템.
 PDF → 이미지(300 DPI) → AI Vision API → JSON → 검증 → CSV
 
 **Platform**: Windows (macOS/Linux 호환)
-**Default Provider**: Claude Haiku 4.5 (`claude-haiku-4-5-20251001`)
+**Default Provider**: Google Gemini 3.1 Flash Lite (`gemini-3.1-flash-lite-preview`)
 
 ## Common Commands
 
@@ -42,7 +42,8 @@ Auto_PROMs_PSM_4_GUI/
 │   ├── __init__.py           # PROJECT_ROOT, DATA_DIR 정의
 │   ├── config.py             # ConfigManager (dotenv + pathlib)
 │   ├── base_processor.py     # Abstract base: instructions, encode, process
-│   ├── claude_processor.py   # Claude API (_call_api) — default
+│   ├── gemini_processor.py   # Gemini API (_call_api) — default
+│   ├── claude_processor.py   # Claude API (_call_api)
 │   ├── openai_processor.py   # OpenAI API (_call_api)
 │   ├── validators.py         # SurveyValidator + EQ-5D cache
 │   ├── pdf_processor.py      # PDF → image (PyMuPDF 300 DPI)
@@ -71,7 +72,7 @@ Image[]
   ↓ BaseProcessor.process_images()
   ↓   → concurrent: ThreadPoolExecutor (max_workers=6)
   ↓   → sequential: fallback
-  ↓ _call_api() → Claude / OpenAI Vision API
+  ↓ _call_api() → Gemini / Claude / OpenAI Vision API
 JSON responses
   ↓ SurveyValidator.validate_page_data()
   ↓ EQ-5D value lookup (class-level cache)
@@ -102,7 +103,7 @@ CSV output (35+ fields)
 
 ## Key Design Decisions
 
-- **Strategy Pattern**: `BaseProcessor` ABC → `ClaudeProcessor` (default) / `OpenAIProcessor`
+- **Strategy Pattern**: `BaseProcessor` ABC → `GeminiProcessor` (default) / `ClaudeProcessor` / `OpenAIProcessor`
 - **Concurrency**: `ThreadPoolExecutor` + `SimpleRateLimiter` (semaphore), config에서 on/off
 - **GUI Framework**: NiceGUI 3.x + pywebview (native desktop window, no browser needed)
 - **CSS**: Inline `<style>` injection (`_QUASAR_STYLE_OVERRIDES`) + cache-busted static CSS
@@ -126,15 +127,17 @@ CSV output (35+ fields)
 ```env
 CLAUDE_API_KEY=sk-ant-xxx
 OPENAI_API_KEY=sk-proj-xxx
+GEMINI_API_KEY=xxx
 ```
 
 ### config.json (runtime settings, tracked in git)
 ```json
 {
   "api_settings": {
-    "provider": "claude",
+    "provider": "gemini",
+    "openai_model": "gpt-5-mini",
     "claude_model": "claude-haiku-4-5-20251001",
-    "openai_model": "gpt-5-mini"
+    "gemini_model": "gemini-3.1-flash-lite-preview"
   },
   "folders": {
     "input_folder": "input_pdfs",
@@ -168,13 +171,14 @@ OPENAI_API_KEY=sk-proj-xxx
 ## Build Notes
 
 - `scripts/build_executable.py` generates `.spec` dynamically — do NOT pass `--onefile`, `--windowed`, `--name` to PyInstaller
-- NiceGUI static assets bundled via hidden imports (nicegui, webview, fastapi, uvicorn)
+- Build mode: **onedir** (COLLECT step) — faster startup than onefile
+- NiceGUI static assets bundled via hidden imports (nicegui, webview, fastapi, uvicorn, google.genai)
 - `.env` is excluded from builds; `config.json` is bundled directly
-- Portable package includes `config.json`, `.env.example`, `data/` files
+- Portable package copies entire `dist/AutoSpineSurvey/` dir + `config.json`, `.env.example`
 
 ## Platform Notes
 
 - **Path**: `pathlib.Path` throughout (cross-platform backslash handling)
 - **Upload**: `ui.upload` with drag-and-drop; staged in `uploaded_pdfs/` (cross-platform)
-- **Build**: PyInstaller single-file executable
+- **Build**: PyInstaller onedir executable
 - **Native Window**: pywebview — WKWebView (macOS), Edge WebView2 (Windows)
