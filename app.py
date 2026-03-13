@@ -13,7 +13,13 @@ import time
 import traceback
 from pathlib import Path
 
-_LOG_DIR = Path(__file__).parent / "logs"
+# Frozen exe: logs next to the .exe; dev mode: project root
+if getattr(sys, "frozen", False):
+    _APP_ROOT = Path(sys.executable).parent
+else:
+    _APP_ROOT = Path(__file__).resolve().parent
+
+_LOG_DIR = _APP_ROOT / "logs"
 _LOG_DIR.mkdir(exist_ok=True)
 _STARTUP_LOG = _LOG_DIR / "startup.log"
 
@@ -33,7 +39,10 @@ except Exception as exc:
     sys.exit(1)
 
 # Serve gui_ng/ directory as /static so styles.css is accessible
-_GUI_NG_DIR = Path(__file__).parent / "gui_ng"
+if getattr(sys, "frozen", False):
+    _GUI_NG_DIR = Path(getattr(sys, "_MEIPASS", "")) / "gui_ng"
+else:
+    _GUI_NG_DIR = Path(__file__).resolve().parent / "gui_ng"
 app.add_static_files("/static", str(_GUI_NG_DIR))
 
 

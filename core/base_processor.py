@@ -134,7 +134,9 @@ class BaseProcessor(ABC):
 
     def encode_image(self, image_array: np.ndarray) -> str:
         """Encode a numpy image array to a base64 JPEG string."""
-        success, encoded_image = cv2.imencode('.jpg', image_array)
+        success, encoded_image = cv2.imencode(
+            '.jpg', image_array, [cv2.IMWRITE_JPEG_QUALITY, 98]
+        )
         if not success:
             raise ValueError("Image encoding failed")
         return base64.b64encode(encoded_image.tobytes()).decode('utf-8')
