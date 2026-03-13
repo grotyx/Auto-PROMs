@@ -105,6 +105,7 @@ CSV output (35+ fields)
 
 - **Strategy Pattern**: `BaseProcessor` ABC → `GeminiProcessor` (default) / `ClaudeProcessor` / `OpenAIProcessor`
 - **Concurrency**: `ThreadPoolExecutor` + `SimpleRateLimiter` (semaphore), config에서 on/off
+- **Auto-retry**: API 호출 실패 시 최대 2회 재시도, 지수 백오프 (1s, 2s)
 - **GUI Framework**: NiceGUI 3.x + pywebview (native desktop window, no browser needed)
 - **CSS**: Inline `<style>` injection (`_QUASAR_STYLE_OVERRIDES`) + cache-busted static CSS
 - **Upload**: `ui.upload` for file selection + drag-and-drop; files staged in `uploaded_pdfs/` (separate from `temp_images/` which is wiped per-file)

@@ -55,8 +55,10 @@ python app.py
 - **Drag-and-drop** — Drop PDF files directly onto the upload zone
 - **Concurrent processing** — Parallel page API calls via ThreadPoolExecutor
 - **Triple AI support** — Switch between Gemini (default), Claude, and OpenAI at runtime
+- **Auto-retry** — Failed API calls automatically retry up to 2 times with backoff
 - **EQ-5D value calculation** — Automatic lookup from Korean value set table
 - **Real-time progress** — Per-page progress bar during AI processing
+- **Processing summary** — Completion dialog with success/fail counts, surveys, elapsed time
 
 ## Usage
 
@@ -203,6 +205,8 @@ Detailed logs: `logs/spine_survey_*.log`
 - Settings UI simplified: unified model dropdown per provider, API keys managed via `.env` only
 - Build changed from PyInstaller onefile to onedir for faster startup
 - PDF files sorted by filename before processing
+- Auto-retry for failed API calls (2 retries with exponential backoff)
+- Processing summary dialog: success/fail counts, survey count, elapsed time
 - Config hot-reload (`reload_config()`) for seamless provider switching
 
 ### v2.1.1
