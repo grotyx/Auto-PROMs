@@ -57,9 +57,9 @@ class PDFProcessor:
             raise
     
     def preprocess_image(self, image_path: str) -> np.ndarray:
-        """이미지 전처리 (컬러 유지)"""
+        """이미지 로드 + 크기 정규화 (AI 비전 모델에 원본 전달)"""
         self.logger.info(f"Preprocessing image: {image_path}")
-        
+
         try:
             # 이미지 읽기
             img = cv2.imread(image_path)
@@ -74,26 +74,7 @@ class PDFProcessor:
                 height = int(height * scale)
                 img = cv2.resize(img, (width, height), interpolation=cv2.INTER_LANCZOS4)
 
-            # 노이즈 제거 (가우시안 블러 적용) - 컬러 이미지에 적용
-            denoised = cv2.GaussianBlur(img, (3, 3), 0)
-
-            # 컬러 이미지 대비 향상 (각 채널별로 CLAHE 적용)
-            lab = cv2.cvtColor(denoised, cv2.COLOR_BGR2LAB)
-            l_channel, a_channel, b_channel = cv2.split(lab)
-            
-            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-            l_channel = clahe.apply(l_channel)
-            
-            enhanced = cv2.merge([l_channel, a_channel, b_channel])
-            enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
-
-            # 샤프닝 필터 적용 (텍스트 선명도 향상)
-            kernel = np.array([[0, -1, 0],
-                             [-1, 5, -1],
-                             [0, -1, 0]])
-            sharpened = cv2.filter2D(enhanced, -1, kernel)
-
-            return sharpened
+            return img
             
         except Exception as e:
             self.logger.error(f"Error preprocessing image: {str(e)}")
