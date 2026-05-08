@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Auto Spine Survey v2.2.0 — NiceGUI entry point
+Auto Spine Survey v2.2.1 — NiceGUI entry point
 
 Runs as a native desktop window via pywebview (no separate browser needed).
 Usage:

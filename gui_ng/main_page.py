@@ -1,5 +1,5 @@
 """
-Auto Spine Survey v2.2.0 - Main Page (NiceGUI)
+Auto Spine Survey v2.2.1 - Main Page (NiceGUI)
 Migrated from CustomTkinter gui/main_window.py to NiceGUI.
 """
 
@@ -348,7 +348,7 @@ def _build_status_bar() -> None:
     with ui.row().classes('status-bar w-full items-center justify-between'):
         with ui.row().classes('items-center gap-3'):
             _ui['status_label'] = ui.label('준비됨').classes('text-xs')
-            ui.label('v2.2.0').classes('text-xs font-bold')
+            ui.label('v2.2.1').classes('text-xs font-bold')
             _ui['model_label'] = ui.label(model_text).classes('text-xs')
 
         _ui['time_label'] = ui.label('').classes('text-xs')

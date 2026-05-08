@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Auto Spine Survey v2.2.0 — AI 기반 척추 설문지(PROMs) 데이터 자동 추출 시스템.
+Auto Spine Survey v2.2.1 — AI 기반 척추 설문지(PROMs) 데이터 자동 추출 시스템.
 PDF → 이미지(300 DPI) → AI Vision API → JSON → 검증 → CSV
 
 **Platform**: Windows (macOS/Linux 호환)

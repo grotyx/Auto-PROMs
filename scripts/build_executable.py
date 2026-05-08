@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Auto Spine Survey v2.2.0 - Build Script
+Auto Spine Survey v2.2.1 - Build Script
 Builds GUI executable using PyInstaller.
 
 Usage:
@@ -12,7 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-VERSION = "2.2.0"
+VERSION = "2.2.1"
 APP_NAME = "AutoSpineSurvey"
 
 # Data files to bundle (paths relative to project root)
@@ -225,6 +225,7 @@ def build() -> bool:
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--clean",
+        "--noconfirm",
         str(spec_path),
     ]
 

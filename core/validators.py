@@ -60,7 +60,10 @@ class SurveyValidator:
                             data[key] = None
 
                 if 'rc_id' in data:
-                    data['rc_id'] = str(data['rc_id']).zfill(8)
+                    if data['rc_id'] is None or str(data['rc_id']).strip().lower() in ('', 'none'):
+                        data['rc_id'] = None
+                    else:
+                        data['rc_id'] = str(data['rc_id']).zfill(8)
 
                 if 'redcap_event_name' in data:
                     valid_events = ["preoperative_evalu_arm_1", "opd_followup_arm_1"]

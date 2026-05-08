@@ -1,4 +1,4 @@
-# Auto Spine Survey v2.2.0
+# Auto Spine Survey v2.2.1
 
 AI-powered spine surgery PROMs (Patient-Reported Outcome Measures) PDF data extraction system.
 
@@ -199,7 +199,12 @@ Detailed logs: `logs/spine_survey_*.log`
 
 ## Version History
 
-### v2.2.0 (Current)
+### v2.2.1 (Current)
+- Fixed CSV generation crash when `rc_id` extraction fails (`'0000None'` literal-int error)
+- Survey data preserved when `rc_id` is missing — only `rc_id` cell left blank, all other fields kept
+- Build script: added `--noconfirm` to PyInstaller call to avoid stale `dist/` overwrite failures
+
+### v2.2.0
 - Google Gemini support added (`gemini-3.1-flash-lite-preview` as new default)
 - Triple AI provider support: Gemini, Claude, OpenAI — switchable at runtime
 - Settings UI simplified: unified model dropdown per provider, API keys managed via `.env` only
