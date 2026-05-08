@@ -268,16 +268,12 @@ class BaseProcessor(ABC):
                         progress_callback=progress_callback,
                     )
 
-                    if (
-                        visit_data
-                        and isinstance(visit_data, dict)
-                        and 'rc_id' in visit_data
-                        and visit_data['rc_id']
-                    ):
+                    if visit_data and isinstance(visit_data, dict):
                         survey_data.append(visit_data)
+                        rc_id_display = visit_data.get('rc_id') or '(missing)'
                         self.logger.info(
                             f"Successfully processed survey {i // 6 + 1} "
-                            f"with rc_id: {visit_data['rc_id']}"
+                            f"with rc_id: {rc_id_display}"
                         )
                     else:
                         self.logger.warning(

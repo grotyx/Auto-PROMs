@@ -55,7 +55,8 @@ class CSVGenerator:
             df = df[self.columns]
             
             # 데이터 타입 변환
-            df['rc_id'] = df['rc_id'].astype('Int64')
+            # rc_id: 숫자만 Int64로, '0000None' 같이 변환 불가한 값은 NA로 (다른 컬럼 데이터는 보존)
+            df['rc_id'] = pd.to_numeric(df['rc_id'], errors='coerce').astype('Int64')
             df['visit_day'] = pd.to_datetime(df['visit_day'], format='mixed', errors='coerce').dt.strftime('%Y-%m-%d')
 
             # CSV 저장
