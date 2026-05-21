@@ -214,6 +214,12 @@ Detailed logs: `logs/spine_survey_*.log`
 - Claude and OpenAI support
 - Drag-and-drop PDF processing
 
+## Author
+
+**Sang-Min Park, MD**
+Department of Orthopaedic Surgery, Seoul National University College of Medicine
+Email: <psmini@snu.ac.kr>
+
 ## License
 
 This project is released under the [MIT License](LICENSE).
