@@ -2,6 +2,8 @@
 
 AI-powered spine surgery PROMs (Patient-Reported Outcome Measures) PDF data extraction system.
 
+> 한국어 문서: [README.ko.md](README.ko.md)
+
 ## Overview
 
 Automatically analyzes spine surgery PROMs PDF files using AI vision APIs and extracts structured data into CSV format.
@@ -39,7 +41,6 @@ CLAUDE_API_KEY=sk-ant-your-key-here
 OPENAI_API_KEY=sk-proj-your-key-here
 ```
 
-On first run, `config_template.json` is copied to `config.json` automatically.
 Default provider is Claude. To switch provider, edit `config.json`:
 ```json
 {
@@ -96,7 +97,7 @@ Output:
 ```
 AutoSpineSurvey_Portable/
 ├── AutoSpineSurvey(.exe)
-├── config.json              # Template config (no API keys)
+├── config.json              # Settings (no API keys)
 ├── .env.example             # API key template
 ├── data/
 │   ├── page_instruction.json
@@ -114,9 +115,10 @@ AutoSpineSurvey_Portable/
 ```
 Auto_PROMs_PSM_4_GUI/
 ├── main_gui.py               # GUI entry point
-├── README.md
+├── README.md                 # English documentation
+├── README.ko.md              # Korean documentation
+├── LICENSE                   # MIT License
 ├── requirements.txt
-├── config_template.json      # Config template (committed)
 ├── .env.example              # API key template (committed)
 │
 ├── core/                     # Processing modules
@@ -164,7 +166,7 @@ Auto_PROMs_PSM_4_GUI/
         "max_tokens": 2000,
         "temperature": 0,
         "concurrent_enabled": true,
-        "max_concurrent_requests": 3
+        "max_concurrent_requests": 6
     },
     "output": {
         "csv_filename": "spine_survey_results.csv",
@@ -199,7 +201,7 @@ Detailed logs: `logs/spine_survey_*.log`
 ### v2.0
 - Security: API keys moved to `.env` file (python-dotenv)
 - Architecture: Abstract base processor class, validators module, EQ-5D caching
-- Performance: Concurrent page processing (ThreadPoolExecutor, max 3 workers)
+- Performance: Concurrent page processing (ThreadPoolExecutor, max 6 workers)
 - GUI: Rewritten with CustomTkinter (dark/light mode, collapsible log panel)
 - Build: PyInstaller build script
 
@@ -214,4 +216,18 @@ Detailed logs: `logs/spine_survey_*.log`
 
 ## License
 
-Copyright 2025 Sang-Min Park, Department of Orthopaedic Surgery, Seoul National University College of Medicine. All rights reserved.
+This project is released under the [MIT License](LICENSE).
+
+Copyright (c) 2025-2026 Sang-Min Park
+
+### Third-party content
+- **EQ-5D-5L** Korean version and value set: subject to the licensing terms of the
+  EuroQol Research Foundation. Commercial and non-commercial users should
+  obtain the appropriate license at <https://euroqol.org>.
+- **ODI** (Oswestry Disability Index) Korean translation: please review the
+  copyright/licensing terms of the original instrument before redistribution.
+- **painDETECT** questionnaire: subject to the terms of the original
+  copyright holder (Pfizer / Freynhagen et al.).
+
+The MIT License applies only to the source code in this repository, not to the
+underlying clinical instruments.
