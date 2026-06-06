@@ -1,1 +1,1 @@
-"""NiceGUI-based GUI package for Auto Spine Survey v2.2.1"""
+"""NiceGUI-based GUI package for Auto Spine Survey v2.2.2"""

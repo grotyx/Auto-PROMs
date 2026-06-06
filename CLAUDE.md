@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Auto Spine Survey v2.2.1 — AI 기반 척추 설문지(PROMs) 데이터 자동 추출 시스템.
+Auto Spine Survey v2.2.2 — AI 기반 척추 설문지(PROMs) 데이터 자동 추출 시스템.
 PDF → 이미지(300 DPI) → AI Vision API → JSON → 검증 → CSV
 
 **Platform**: Windows (macOS/Linux 호환)
-**Default Provider**: Google Gemini 3.1 Flash Lite (`gemini-3.1-flash-lite-preview`)
+**Default Provider**: Google Gemini 3.5 Flash (`gemini-3.5-flash`, `thinking_level: minimal`)
 
 ## Common Commands
 
@@ -138,7 +138,8 @@ GEMINI_API_KEY=xxx
     "provider": "gemini",
     "openai_model": "gpt-5-mini",
     "claude_model": "claude-haiku-4-5-20251001",
-    "gemini_model": "gemini-3.1-flash-lite-preview"
+    "gemini_model": "gemini-3.5-flash",
+    "gemini_thinking_level": "minimal"
   },
   "folders": {
     "input_folder": "input_pdfs",

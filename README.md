@@ -1,4 +1,4 @@
-# Auto Spine Survey v2.2.1
+# Auto Spine Survey v2.2.2
 
 AI-powered spine surgery PROMs (Patient-Reported Outcome Measures) PDF data extraction system.
 
@@ -13,7 +13,7 @@ Automatically analyzes spine surgery PROMs PDF files using AI vision APIs and ex
 - **painDETECT** — Neuropathic pain assessment
 
 ### Supported AI Models
-- **Gemini 3.1 Flash Lite** (`gemini-3.1-flash-lite-preview`) — Google (default)
+- **Gemini 3.5 Flash** (`gemini-3.5-flash`) — Google (default)
 - **Claude Haiku 4.5** (`claude-haiku-4-5-20251001`) — Anthropic
 - **GPT-5 mini** (`gpt-5-mini`) — OpenAI
 
@@ -135,7 +135,8 @@ Auto_PROMs_PSM_4_GUI/
         "provider": "gemini",
         "openai_model": "gpt-5-mini",
         "claude_model": "claude-haiku-4-5-20251001",
-        "gemini_model": "gemini-3.1-flash-lite-preview"
+        "gemini_model": "gemini-3.5-flash",
+        "gemini_thinking_level": "minimal"
     },
     "folders": {
         "input_folder": "input_pdfs",
@@ -199,7 +200,12 @@ Detailed logs: `logs/spine_survey_*.log`
 
 ## Version History
 
-### v2.2.1 (Current)
+### v2.2.2 (Current)
+- Default Gemini model changed to `gemini-3.5-flash`
+- Added `gemini_thinking_level` config (default `minimal`) wired into `GeminiProcessor`
+- Header/UI labels and settings dropdown updated for the new default model
+
+### v2.2.1
 - Fixed CSV generation crash when `rc_id` extraction fails (`'0000None'` literal-int error)
 - Survey data preserved when `rc_id` is missing — only `rc_id` cell left blank, all other fields kept
 - Build script: added `--noconfirm` to PyInstaller call to avoid stale `dist/` overwrite failures

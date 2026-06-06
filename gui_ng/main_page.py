@@ -1,5 +1,5 @@
 """
-Auto Spine Survey v2.2.1 - Main Page (NiceGUI)
+Auto Spine Survey v2.2.2 - Main Page (NiceGUI)
 Migrated from CustomTkinter gui/main_window.py to NiceGUI.
 """
 
@@ -128,7 +128,7 @@ def build_page() -> None:
 def _build_header() -> None:
     config = ConfigManager()
     provider = config.get_provider()
-    model_names = {"claude": "Claude Haiku 4.5", "openai": "GPT-5 mini", "gemini": "Gemini 3.1 Flash Lite"}
+    model_names = {"claude": "Claude Haiku 4.5", "openai": "GPT-5 mini", "gemini": "Gemini 3.5 Flash"}
     model_name = model_names.get(provider, provider)
 
     with ui.row().classes('app-header w-full items-center justify-between'):
@@ -342,13 +342,13 @@ def _build_log_panel() -> None:
 def _build_status_bar() -> None:
     config = ConfigManager()
     provider = config.get_provider()
-    model_names = {"claude": "Claude Haiku 4.5", "openai": "GPT-5 mini", "gemini": "Gemini 3.1 Flash Lite"}
+    model_names = {"claude": "Claude Haiku 4.5", "openai": "GPT-5 mini", "gemini": "Gemini 3.5 Flash"}
     model_text = model_names.get(provider, provider)
 
     with ui.row().classes('status-bar w-full items-center justify-between'):
         with ui.row().classes('items-center gap-3'):
             _ui['status_label'] = ui.label('준비됨').classes('text-xs')
-            ui.label('v2.2.1').classes('text-xs font-bold')
+            ui.label('v2.2.2').classes('text-xs font-bold')
             _ui['model_label'] = ui.label(model_text).classes('text-xs')
 
         _ui['time_label'] = ui.label('').classes('text-xs')
@@ -767,7 +767,7 @@ def _refresh_provider_label() -> None:
     reload_config()  # 설정 파일 다시 로드
     config = ConfigManager()
     provider = config.get_provider()
-    model_names = {"claude": "Claude Haiku 4.5", "openai": "GPT-5 mini", "gemini": "Gemini 3.1 Flash Lite"}
+    model_names = {"claude": "Claude Haiku 4.5", "openai": "GPT-5 mini", "gemini": "Gemini 3.5 Flash"}
     model_name = model_names.get(provider, provider)
     if 'provider_label' in _ui:
         _ui['provider_label'].set_text(model_name)
