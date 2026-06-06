@@ -23,6 +23,7 @@ _MODEL_OPTIONS = {
         'gpt-5-nano',
     ],
     'gemini': [
+        'gemini-3.5-flash',
         'gemini-3.1-flash-lite-preview',
         'gemini-3-flash-preview',
     ],
@@ -32,7 +33,7 @@ _MODEL_OPTIONS = {
 _DEFAULT_MODELS = {
     'claude': 'claude-haiku-4-5-20251001',
     'openai': 'gpt-5-mini',
-    'gemini': 'gemini-3.1-flash-lite-preview',
+    'gemini': 'gemini-3.5-flash',
 }
 
 
@@ -119,7 +120,7 @@ def build_settings_dialog(on_saved: Optional[Callable] = None):
         'provider': api_cfg.get('provider', 'gemini'),
         'claude_model': api_cfg.get('claude_model', 'claude-haiku-4-5-20251001'),
         'openai_model': api_cfg.get('openai_model', 'gpt-5-mini'),
-        'gemini_model': api_cfg.get('gemini_model', 'gemini-3.1-flash-lite-preview'),
+        'gemini_model': api_cfg.get('gemini_model', 'gemini-3.5-flash'),
     }
 
     folder_state = {

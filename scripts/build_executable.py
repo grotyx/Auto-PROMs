@@ -302,7 +302,7 @@ Usage
 Results are saved to output_csv/. Logs are in logs/.
 
 Supported Surveys: VAS, ODI, EQ-5D-5L, painDETECT
-Supported Models: Gemini 3.1 Flash Lite (default), Claude Haiku 4.5, GPT-5 mini
+Supported Models: Gemini 3.5 Flash (default), Claude Haiku 4.5, GPT-5 mini
 """
     (package_dir / "README.txt").write_text(readme, encoding="utf-8")
 

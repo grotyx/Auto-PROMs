@@ -22,7 +22,8 @@ DEFAULT_CONFIG = {
         "provider": "gemini",
         "openai_model": "gpt-5-mini",
         "claude_model": "claude-haiku-4-5-20251001",
-        "gemini_model": "gemini-3.1-flash-lite-preview"
+        "gemini_model": "gemini-3.5-flash",
+        "gemini_thinking_level": "minimal"
     },
     "folders": {
         "input_folder": "input_pdfs",
@@ -174,9 +175,13 @@ class ConfigManager:
         elif provider == "claude":
             return self.config["api_settings"].get("claude_model", "claude-haiku-4-5-20251001")
         elif provider == "gemini":
-            return self.config["api_settings"].get("gemini_model", "gemini-3.1-flash-lite-preview")
+            return self.config["api_settings"].get("gemini_model", "gemini-3.5-flash")
         else:
             raise ValueError(f"Unknown API provider: {provider}")
+
+    def get_gemini_thinking_level(self) -> str:
+        """Gemini thinking_level 반환 (없으면 'minimal')"""
+        return self.config["api_settings"].get("gemini_thinking_level", "minimal")
 
     def get_provider(self) -> str:
         """현재 설정된 API 제공자 반환"""
