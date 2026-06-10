@@ -2,6 +2,8 @@
 
 AI-powered spine surgery PROMs (Patient-Reported Outcome Measures) PDF data extraction system.
 
+> 한국어 문서: [README.ko.md](README.ko.md)
+
 ## Overview
 
 Automatically analyzes spine surgery PROMs PDF files using AI vision APIs and extracts structured data into CSV format.
@@ -83,7 +85,9 @@ Multi-survey PDFs are automatically split into 6-page segments.
 ```
 Auto_PROMs_PSM_4_GUI/
 ├── app.py                    # Entry point: ui.run(native=True)
-├── README.md
+├── README.md                 # English documentation
+├── README.ko.md              # Korean documentation
+├── LICENSE                   # MIT License
 ├── requirements.txt
 ├── config.json               # Runtime settings (no API keys)
 ├── .env                      # API keys only (git-ignored)
@@ -264,6 +268,26 @@ Detailed logs: `logs/spine_survey_*.log`
 - Claude and OpenAI support
 - Drag-and-drop PDF processing
 
+## Author
+
+**Sang-Min Park, MD**
+Department of Orthopaedic Surgery, Seoul National University College of Medicine
+Email: <psmini@snu.ac.kr>
+
 ## License
 
-Copyright 2025-2026 Sang-Min Park, Department of Orthopaedic Surgery, Seoul National University College of Medicine. All rights reserved.
+This project is released under the [MIT License](LICENSE).
+
+Copyright (c) 2025-2026 Sang-Min Park
+
+### Third-party content
+- **EQ-5D-5L** Korean version and value set: subject to the licensing terms of the
+  EuroQol Research Foundation. Commercial and non-commercial users should
+  obtain the appropriate license at <https://euroqol.org>.
+- **ODI** (Oswestry Disability Index) Korean translation: please review the
+  copyright/licensing terms of the original instrument before redistribution.
+- **painDETECT** questionnaire: subject to the terms of the original
+  copyright holder (Pfizer / Freynhagen et al.).
+
+The MIT License applies only to the source code in this repository, not to the
+underlying clinical instruments.
