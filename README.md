@@ -1,4 +1,4 @@
-# Auto Spine Survey v2.2.2
+# Auto Spine Survey v2.2.3
 
 AI-powered spine surgery PROMs (Patient-Reported Outcome Measures) PDF data extraction system.
 
@@ -200,7 +200,30 @@ Detailed logs: `logs/spine_survey_*.log`
 
 ## Version History
 
-### v2.2.2 (Current)
+### v2.2.3 (Current)
+
+**Security**
+- Server now binds to `127.0.0.1` only (browser fallback mode previously listened on all interfaces, exposing the app on the local network)
+- Static file serving restricted to `styles.css` (previously the whole `gui_ng/` source directory was served over HTTP)
+- Upload filenames sanitized against path traversal; duplicate names get `_1`, `_2` suffixes
+- Patient data (PHI) no longer written to log files — only field names/counts are logged
+- Leftover patient data (`temp_images/`, `uploaded_pdfs/`) from crashed runs is cleaned at startup
+
+**Fixes**
+- Output folder setting in `config.json` is now actually used (was hardcoded to `output_csv/`)
+- `include_timestamps` output setting now honored
+- `gemini_thinking_level` no longer lost when saving settings
+- `rc_id` exported as zero-padded string in CSV (numeric conversion stripped leading zeros, breaking REDCap ID matching)
+- Surveys where every page failed are no longer counted as successful
+- Surveys dropped for missing `rc_id` now produce a warning with count
+- Retry backoff no longer holds a concurrency slot while waiting
+- Duplicate log lines fixed (handler was attached to root and named loggers)
+- Correct env var named in Gemini API-key error message
+- "Max 50 files" limit now enforced in the UI
+- `max_tokens` and `temperature` settings now passed to API calls (were hardcoded)
+- `requirements.txt`: `nicegui>=3.0.0` (3.x upload API is required)
+
+### v2.2.2
 - Default Gemini model changed to `gemini-3.5-flash`
 - Added `gemini_thinking_level` config (default `minimal`) wired into `GeminiProcessor`
 - Header/UI labels and settings dropdown updated for the new default model

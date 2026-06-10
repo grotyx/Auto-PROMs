@@ -1,5 +1,5 @@
 """
-Auto Spine Survey v2.2.2 - Main Page (NiceGUI)
+Auto Spine Survey v2.2.3 - Main Page (NiceGUI)
 Migrated from CustomTkinter gui/main_window.py to NiceGUI.
 """
 
@@ -175,8 +175,16 @@ async def _handle_upload(event, pdf_files: List[str], file_card_elements: Dict) 
     upload_dir = PROJECT_ROOT / 'uploaded_pdfs'
     upload_dir.mkdir(parents=True, exist_ok=True)
 
-    name = event.file.name
+    # Path(...).name strips any directory components a client could smuggle
+    # into the filename (path traversal); counter suffix avoids overwriting
+    # a previously staged file with the same name.
+    name = Path(event.file.name).name
+    stem, suffix = Path(name).stem, Path(name).suffix
     dest = upload_dir / name
+    counter = 1
+    while dest.exists():
+        dest = upload_dir / f"{stem}_{counter}{suffix}"
+        counter += 1
     await event.file.save(str(dest))
     _add_files([str(dest)], pdf_files, file_card_elements)
 
@@ -200,9 +208,15 @@ def _build_file_list(pdf_files: List[str], file_card_elements: Dict) -> None:
             _ui['file_list_column'] = ui.column().classes('w-full gap-1')
 
 
+_MAX_FILES = 50
+
+
 def _add_files(paths: List[str], pdf_files: List[str], file_card_elements: Dict) -> None:
     added = 0
     for p in paths:
+        if len(pdf_files) >= _MAX_FILES:
+            ui.notify(f'최대 {_MAX_FILES}개 파일까지만 추가할 수 있습니다.', type='warning')
+            break
         if p not in pdf_files:
             pdf_files.append(p)
             _create_file_card(p, 'waiting', file_card_elements, pdf_files)
@@ -348,7 +362,7 @@ def _build_status_bar() -> None:
     with ui.row().classes('status-bar w-full items-center justify-between'):
         with ui.row().classes('items-center gap-3'):
             _ui['status_label'] = ui.label('준비됨').classes('text-xs')
-            ui.label('v2.2.2').classes('text-xs font-bold')
+            ui.label('v2.2.3').classes('text-xs font-bold')
             _ui['model_label'] = ui.label(model_text).classes('text-xs')
 
         _ui['time_label'] = ui.label('').classes('text-xs')
@@ -466,14 +480,9 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(log_formatter)
 
-    loggers = [
-        logging.getLogger('PDFProcessor'),
-        logging.getLogger('ClaudeProcessor'),
-        logging.getLogger('OpenAIProcessor'),
-        logging.getLogger('GeminiProcessor'),
-        logging.getLogger('CSVGenerator'),
-        logging.getLogger(),
-    ]
+    # Root logger only: module loggers all propagate to root, so attaching the
+    # handler to each named logger as well would duplicate every line.
+    loggers = [logging.getLogger()]
     for logger in loggers:
         logger.setLevel(logging.INFO)
         logger.addHandler(file_handler)
@@ -578,13 +587,14 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
 
         # CSV generation
         if all_survey_data and not state['stop_requested']:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             output_config = config_manager.get_output_config()
-            filename = f"{timestamp}_{output_config['csv_filename']}"
+            filename = output_config['csv_filename']
+            if output_config.get('include_timestamps', True):
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{timestamp}_{filename}"
 
-            output_dir = os.path.join(base_dir, 'output_csv')
-            os.makedirs(output_dir, exist_ok=True)
-            output_path = os.path.join(output_dir, filename)
+            os.makedirs(output_folder, exist_ok=True)
+            output_path = os.path.join(output_folder, filename)
 
             csv_generator = CSVGenerator(output_path)
             df = csv_generator.generate_csv(all_survey_data)
@@ -737,8 +747,7 @@ def _stop_processing() -> None:
 
 
 def _open_output_folder() -> None:
-    from core import PROJECT_ROOT
-    output_folder = str(PROJECT_ROOT / 'output_csv')
+    output_folder = load_config().get_folders()['output_folder']
     os.makedirs(output_folder, exist_ok=True)
     _open_path(output_folder)
 

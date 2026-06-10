@@ -39,7 +39,8 @@ class ClaudeProcessor(BaseProcessor):
 
         response = self.client.messages.create(
             model=self.model,
-            max_tokens=4096,
+            max_tokens=self._max_tokens,
+            temperature=self._temperature,
             system=self.system_prompt,
             messages=messages,
         )

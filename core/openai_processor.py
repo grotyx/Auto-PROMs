@@ -39,10 +39,12 @@ class OpenAIProcessor(BaseProcessor):
             },
         ]
 
+        # No temperature here: gpt-5 reasoning models reject values other
+        # than the default.
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
-            max_completion_tokens=4096,
+            max_completion_tokens=self._max_tokens,
             response_format={"type": "json_object"},
         )
 

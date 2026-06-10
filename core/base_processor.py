@@ -50,10 +50,12 @@ class BaseProcessor(ABC):
             except Exception:
                 self.model = self._default_model()
 
-        # Concurrency settings (loaded from config, with safe defaults)
+        # Processing settings (loaded from config, with safe defaults)
         self._concurrent_enabled = False
         self._max_workers = 3
-        self._load_concurrency_settings()
+        self._max_tokens = 4096
+        self._temperature = 0.0
+        self._load_processing_settings()
 
         # Rate limiter for concurrent API calls
         self._rate_limiter = SimpleRateLimiter(self._max_workers)
@@ -61,13 +63,15 @@ class BaseProcessor(ABC):
         self.page_instructions = self._load_instructions()
         self.system_prompt = self._load_system_prompt()
 
-    def _load_concurrency_settings(self):
-        """Load concurrency settings from config.json."""
+    def _load_processing_settings(self):
+        """Load processing settings (concurrency, tokens, temperature) from config.json."""
         try:
             from .config import load_config
             processing = load_config().get_processing_config()
             self._concurrent_enabled = processing.get('concurrent_enabled', False)
             self._max_workers = max(1, min(6, processing.get('max_concurrent_requests', 3)))
+            self._max_tokens = max(256, int(processing.get('max_tokens', 4096)))
+            self._temperature = float(processing.get('temperature', 0.0))
         except Exception:
             pass
 
@@ -181,21 +185,24 @@ class BaseProcessor(ABC):
                 break
             except Exception as e:
                 last_error = e
-                if attempt < max_retries:
-                    wait = 2 ** attempt  # 1s, 2s
-                    self.logger.warning(
-                        f"Page {page_num + 1} API call failed (attempt "
-                        f"{attempt + 1}/{max_retries + 1}): {e}. "
-                        f"Retrying in {wait}s..."
-                    )
-                    time.sleep(wait)
-                else:
-                    self.logger.error(
-                        f"Page {page_num + 1} failed after "
-                        f"{max_retries + 1} attempts: {e}"
-                    )
             finally:
                 self._rate_limiter.release()
+
+            # Back off outside the rate-limiter so the slot frees up for
+            # other pages while this one waits.
+            if attempt < max_retries:
+                wait = 2 ** attempt  # 1s, 2s
+                self.logger.warning(
+                    f"Page {page_num + 1} API call failed (attempt "
+                    f"{attempt + 1}/{max_retries + 1}): {last_error}. "
+                    f"Retrying in {wait}s..."
+                )
+                time.sleep(wait)
+            else:
+                self.logger.error(
+                    f"Page {page_num + 1} failed after "
+                    f"{max_retries + 1} attempts: {last_error}"
+                )
 
         if content is None:
             return None
@@ -236,8 +243,10 @@ class BaseProcessor(ABC):
         page_data = SurveyValidator.validate_page_data(
             page_num, page_data, self.logger
         )
+        # Log field names only — values are patient data (PHI) and must not
+        # end up in plaintext log files.
         self.logger.info(
-            f"Validated data for page {page_num + 1}: {page_data}"
+            f"Validated page {page_num + 1}, fields: {sorted(page_data.keys())}"
         )
         return page_data
 
@@ -341,8 +350,14 @@ class BaseProcessor(ABC):
                     except Exception:
                         pass
 
+            # Every page failed → no survey data; don't fabricate a record
+            # out of completion flags alone.
+            if not all_data:
+                self.logger.warning("All pages failed for this visit — skipping")
+                return {}
+
             all_data.update(self._completion_flags())
-            self.logger.info(f"Final processed data: {all_data}")
+            self.logger.info(f"Visit processed: {len(all_data)} fields")
             return all_data
 
         except Exception as e:
@@ -399,8 +414,14 @@ class BaseProcessor(ABC):
             if page_data is not None:
                 all_data.update(page_data)
 
+        # Every page failed → no survey data; don't fabricate a record
+        # out of completion flags alone.
+        if not all_data:
+            self.logger.warning("All pages failed for this visit — skipping")
+            return {}
+
         all_data.update(self._completion_flags())
-        self.logger.info(f"Final processed data (concurrent): {all_data}")
+        self.logger.info(f"Visit processed (concurrent): {len(all_data)} fields")
         return all_data
 
     @staticmethod

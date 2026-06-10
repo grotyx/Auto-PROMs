@@ -79,6 +79,10 @@ class ConfigManager:
 
         except Exception as e:
             print(f"Error loading config: {str(e)}")
+            # GUI 모드에서는 프로세스를 죽이지 않고 기본 설정으로 폴백
+            if any(m in sys.modules for m in ('gui', 'tkinter', 'nicegui')):
+                print("Falling back to default configuration.")
+                return DEFAULT_CONFIG
             sys.exit(1)
 
     def _create_default_config(self):
@@ -108,7 +112,12 @@ class ConfigManager:
         if not is_gui_mode:
             api_key = self.get_api_key_for_provider(api_provider)
             if not api_key:
-                env_var = "OPENAI_API_KEY" if api_provider == "openai" else "CLAUDE_API_KEY"
+                env_vars = {
+                    "openai": "OPENAI_API_KEY",
+                    "claude": "CLAUDE_API_KEY",
+                    "gemini": "GEMINI_API_KEY",
+                }
+                env_var = env_vars.get(api_provider, "API_KEY")
                 raise ValueError(
                     f"{env_var} not found. "
                     f"Please create a .env file at {_env_path} with your API key."
@@ -241,9 +250,10 @@ def setup_logging(log_folder: str) -> logging.Logger:
 def setup_folders(folders: Dict[str, str]):
     """필요한 폴더들 생성"""
     for folder_name, folder_path in folders.items():
+        abs_path = Path(folder_path)
         try:
             # 절대 경로로 변환
-            abs_path = Path(folder_path).resolve()
+            abs_path = abs_path.resolve()
             # 폴더가 없으면 생성
             if not abs_path.exists():
                 abs_path.mkdir(parents=True, exist_ok=True)

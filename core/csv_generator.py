@@ -44,6 +44,12 @@ class CSVGenerator:
             
             # 빈 데이터 필터링하고 데이터프레임 생성
             valid_data = [data for data in survey_data if data and isinstance(data, dict) and 'rc_id' in data]
+            dropped = len(survey_data) - len(valid_data)
+            if dropped:
+                self.logger.warning(
+                    f"Dropped {dropped} survey(s) without rc_id "
+                    f"(page 0 extraction failed) — data for those surveys is NOT in the CSV"
+                )
             df = pd.DataFrame(valid_data)
             
             # 누락된 열 추가
@@ -55,8 +61,9 @@ class CSVGenerator:
             df = df[self.columns]
             
             # 데이터 타입 변환
-            # rc_id: 숫자만 Int64로, '0000None' 같이 변환 불가한 값은 NA로 (다른 컬럼 데이터는 보존)
-            df['rc_id'] = pd.to_numeric(df['rc_id'], errors='coerce').astype('Int64')
+            # rc_id: zero-padded 문자열 그대로 유지 (REDCap record ID는 8자리 0-패딩;
+            # 숫자 변환하면 앞자리 0이 사라져 import 시 ID 불일치)
+            df['rc_id'] = df['rc_id'].astype('string')
             df['visit_day'] = pd.to_datetime(df['visit_day'], format='mixed', errors='coerce').dt.strftime('%Y-%m-%d')
 
             # CSV 저장

@@ -46,8 +46,8 @@ class GeminiProcessor(BaseProcessor):
 
         config_kwargs = dict(
             system_instruction=self.system_prompt,
-            temperature=0,
-            max_output_tokens=4096,
+            temperature=self._temperature,
+            max_output_tokens=self._max_tokens,
             response_mime_type="application/json",
         )
         thinking_config = self._build_thinking_config()

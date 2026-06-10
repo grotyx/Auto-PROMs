@@ -1,4 +1,4 @@
-# Auto Spine Survey v2.2.1 - Python Dependencies
+# Auto Spine Survey v2.2.3 - Python Dependencies
 
 # Core AI
 anthropic>=0.79.0
@@ -17,7 +17,8 @@ Pillow>=11.0.0
 pandas>=2.2.0
 
 # GUI (NiceGUI + native desktop window via pywebview)
-nicegui>=1.4.0
+# 3.x required: upload handler uses NiceGUI 3 FileUpload API (event.file.save)
+nicegui>=3.0.0
 pywebview>=4.4.0
 
 # Security

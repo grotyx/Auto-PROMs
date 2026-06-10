@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Auto Spine Survey v2.2.2 — NiceGUI entry point
+Auto Spine Survey v2.2.3 — NiceGUI entry point
 
 Runs as a native desktop window via pywebview (no separate browser needed).
 Usage:
@@ -38,12 +38,31 @@ except Exception as exc:
     print(f"상세 로그: {_STARTUP_LOG}")
     sys.exit(1)
 
-# Serve gui_ng/ directory as /static so styles.css is accessible
+# Serve only styles.css (never the whole gui_ng/ dir — that would expose .py sources)
 if getattr(sys, "frozen", False):
     _GUI_NG_DIR = Path(getattr(sys, "_MEIPASS", "")) / "gui_ng"
 else:
     _GUI_NG_DIR = Path(__file__).resolve().parent / "gui_ng"
-app.add_static_files("/static", str(_GUI_NG_DIR))
+app.add_static_file(local_file=str(_GUI_NG_DIR / "styles.css"), url_path="/static/styles.css")
+
+
+def _clean_leftover_data() -> None:
+    """Remove patient data left behind by a previous crashed run."""
+    import shutil
+    for folder in ("temp_images", "uploaded_pdfs"):
+        target = _APP_ROOT / folder
+        if not target.exists():
+            continue
+        for item in target.iterdir():
+            if item.name == ".gitkeep":
+                continue
+            try:
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+            except Exception as exc:
+                logging.warning("Could not clean %s: %s", item, exc)
 
 
 @ui.page("/")
@@ -57,23 +76,28 @@ def main_page() -> None:
 
 
 if __name__ == "__main__":
+    _clean_leftover_data()
     try:
         logging.info("Starting Auto Spine Survey (native=True)")
         ui.run(
             native=True,
+            host="127.0.0.1",
             window_size=(640, 820),
             title="Auto Spine Survey",
             reload=False,
         )
     except Exception as exc:
         logging.critical("Startup failed: %s", exc, exc_info=True)
-        # Fallback: try browser mode if native window fails (e.g. no WebView2)
+        # Fallback: try browser mode if native window fails (e.g. no WebView2).
+        # host must stay 127.0.0.1 — NiceGUI defaults to 0.0.0.0 when native=False,
+        # which would expose the app (and patient data) to the whole LAN.
         print(f"[WARNING] 네이티브 창 실행 실패: {exc}")
         print("브라우저 모드로 재시도합니다...")
         logging.info("Retrying in browser mode (native=False)")
         try:
             ui.run(
                 native=False,
+                host="127.0.0.1",
                 window_size=(640, 820),
                 title="Auto Spine Survey",
                 reload=False,

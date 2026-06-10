@@ -85,12 +85,14 @@ def _browse_folder_native(input_el):
 
 def _save_and_close(dialog, config, api_state, folder_state, proc_state, out_state, on_saved):
     """Collect all state, write config.json, close dialog."""
-    config['api_settings'] = {
+    # update() instead of replace: preserves keys the dialog doesn't manage
+    # (e.g. gemini_thinking_level)
+    config.setdefault('api_settings', {}).update({
         'provider': api_state['provider'],
         'claude_model': api_state['claude_model'],
         'openai_model': api_state['openai_model'],
         'gemini_model': api_state['gemini_model'],
-    }
+    })
     config['folders'] = dict(folder_state)
     config['processing'] = dict(proc_state)
     config['output'] = dict(out_state)

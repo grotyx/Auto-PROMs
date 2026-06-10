@@ -1,4 +1,4 @@
-"""Core processing modules for Auto Spine Survey v2.2.2"""
+"""Core processing modules for Auto Spine Survey v2.2.3"""
 
 import sys
 from pathlib import Path
