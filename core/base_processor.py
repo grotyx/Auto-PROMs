@@ -69,7 +69,9 @@ class BaseProcessor(ABC):
             from .config import load_config
             processing = load_config().get_processing_config()
             self._concurrent_enabled = processing.get('concurrent_enabled', False)
-            self._max_workers = max(1, min(6, processing.get('max_concurrent_requests', 3)))
+            # The rate limiter below is the real governor: this is the total number of
+            # in-flight API calls across every page and file being processed.
+            self._max_workers = max(1, min(48, processing.get('max_concurrent_requests', 3)))
             self._max_tokens = max(256, int(processing.get('max_tokens', 4096)))
             self._temperature = float(processing.get('temperature', 0.0))
         except Exception:
@@ -260,46 +262,47 @@ class BaseProcessor(ABC):
         progress_callback: Optional[Callable] = None,
     ) -> List[Dict]:
         """Process all images, grouping into 6-page surveys."""
-        survey_data = []
         total_pages = len(processed_images)
-
+        visits = []
         for i in range(0, total_pages, 6):
             if i + 6 <= total_pages:
-                visit_images = processed_images[i:i + 6]
-                self.logger.info(
-                    f"Processing survey {i // 6 + 1} of {total_pages // 6}"
-                )
-
-                try:
-                    normalized_images = [(idx % 6, img) for idx, img in visit_images]
-                    visit_data = self.process_single_visit(
-                        normalized_images,
-                        progress_callback=progress_callback,
-                    )
-
-                    if visit_data and isinstance(visit_data, dict):
-                        survey_data.append(visit_data)
-                        rc_id_display = visit_data.get('rc_id') or '(missing)'
-                        self.logger.info(
-                            f"Successfully processed survey {i // 6 + 1} "
-                            f"with rc_id: {rc_id_display}"
-                        )
-                    else:
-                        self.logger.warning(
-                            f"Invalid or missing data for survey {i // 6 + 1}"
-                        )
-
-                except Exception as e:
-                    self.logger.error(
-                        f"Error processing survey at pages {i + 1}-{i + 6}: {e}"
-                    )
-                    continue
+                visits.append((i // 6, [(idx % 6, img) for idx, img in processed_images[i:i + 6]]))
             else:
-                remaining_pages = total_pages - i
                 self.logger.warning(
                     f"Skipping incomplete survey at the end: "
-                    f"{remaining_pages} pages remaining"
+                    f"{total_pages - i} pages remaining"
                 )
+
+        def run_visit(entry):
+            number, visit_images = entry
+            try:
+                return number, self.process_single_visit(
+                    visit_images, progress_callback=progress_callback
+                )
+            except Exception as e:
+                self.logger.error(f"Error processing survey {number + 1}: {e}")
+                return number, None
+
+        # A scan often holds several surveys; run them together rather than one
+        # after another. The rate limiter still caps total in-flight API calls,
+        # so this widens the queue without exceeding max_concurrent_requests.
+        if self._concurrent_enabled and len(visits) > 1:
+            with ThreadPoolExecutor(max_workers=len(visits)) as executor:
+                done = list(executor.map(run_visit, visits))
+        else:
+            done = [run_visit(v) for v in visits]
+
+        # Merge in page order regardless of completion order.
+        survey_data = []
+        for number, visit_data in sorted(done, key=lambda r: r[0]):
+            if visit_data and isinstance(visit_data, dict):
+                survey_data.append(visit_data)
+                self.logger.info(
+                    f"Successfully processed survey {number + 1} "
+                    f"with rc_id: {visit_data.get('rc_id') or '(missing)'}"
+                )
+            else:
+                self.logger.warning(f"Invalid or missing data for survey {number + 1}")
 
         self.logger.info(f"Processed {len(survey_data)} complete surveys")
         return survey_data

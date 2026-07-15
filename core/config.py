@@ -19,7 +19,8 @@ load_dotenv(dotenv_path=_env_path)
 # 기본 설정값 (API 키는 .env에서 관리)
 DEFAULT_CONFIG = {
     "api_settings": {
-        "provider": "gemini",
+        "provider": "openrouter",
+        "openrouter_model": "openai/gpt-5.6-luna",
         "openai_model": "gpt-5-mini",
         "claude_model": "claude-haiku-4-5-20251001",
         "gemini_model": "gemini-3.5-flash",
@@ -104,8 +105,10 @@ class ConfigManager:
 
         # API 설정 확인
         api_provider = config["api_settings"].get("provider", "").lower()
-        if api_provider not in ["openai", "claude", "gemini"]:
-            raise ValueError("API provider must be 'openai', 'claude', or 'gemini'")
+        if api_provider not in ["openrouter", "openai", "claude", "gemini"]:
+            raise ValueError(
+                "API provider must be 'openrouter', 'openai', 'claude', or 'gemini'"
+            )
 
         # .env 파일 존재 확인 (CLI 모드에서만 경고)
         is_gui_mode = any(m in sys.modules for m in ('gui', 'tkinter', 'nicegui'))
@@ -113,6 +116,7 @@ class ConfigManager:
             api_key = self.get_api_key_for_provider(api_provider)
             if not api_key:
                 env_vars = {
+                    "openrouter": "OPENROUTER_API_KEY",
                     "openai": "OPENAI_API_KEY",
                     "claude": "CLAUDE_API_KEY",
                     "gemini": "GEMINI_API_KEY",
@@ -126,7 +130,9 @@ class ConfigManager:
     def _print_config_summary(self, config: Dict[str, Any]):
         """설정 요약 출력"""
         provider = config["api_settings"]["provider"].lower()
-        if provider == "openai":
+        if provider == "openrouter":
+            model = config["api_settings"].get("openrouter_model", "Unknown")
+        elif provider == "openai":
             model = config["api_settings"].get("openai_model", "Unknown")
         elif provider == "claude":
             model = config["api_settings"].get("claude_model", "Unknown")
@@ -151,7 +157,9 @@ class ConfigManager:
     def get_api_key_for_provider(provider: str) -> str:
         """주어진 제공자의 API 키를 환경변수에서 반환"""
         provider = provider.lower()
-        if provider == "openai":
+        if provider == "openrouter":
+            return os.getenv("OPENROUTER_API_KEY", "")
+        elif provider == "openai":
             return os.getenv("OPENAI_API_KEY", "")
         elif provider == "claude":
             return os.getenv("CLAUDE_API_KEY", "")
@@ -179,7 +187,9 @@ class ConfigManager:
     def get_model(self) -> str:
         """현재 설정된 API 제공자의 모델명 반환"""
         provider = self.config["api_settings"]["provider"].lower()
-        if provider == "openai":
+        if provider == "openrouter":
+            return self.config["api_settings"].get("openrouter_model", "openai/gpt-5.6-luna")
+        elif provider == "openai":
             return self.config["api_settings"].get("openai_model", "gpt-5-mini")
         elif provider == "claude":
             return self.config["api_settings"].get("claude_model", "claude-haiku-4-5-20251001")

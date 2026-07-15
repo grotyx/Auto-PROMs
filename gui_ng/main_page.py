@@ -5,6 +5,8 @@ Migrated from CustomTkinter gui/main_window.py to NiceGUI.
 
 import asyncio
 import logging
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import shutil
 import subprocess
@@ -462,6 +464,7 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
     from core.claude_processor import ClaudeProcessor
     from core.openai_processor import OpenAIProcessor
     from core.gemini_processor import GeminiProcessor
+    from core.openrouter_processor import OpenRouterProcessor
     from core.csv_generator import CSVGenerator
     from core import PROJECT_ROOT
 
@@ -513,77 +516,81 @@ def _run_pipeline(pdf_files: List[str], state: Dict) -> None:
                 file_page_counts.append((pdf_path, 0))
 
         processed_pages = 0
+        progress_lock = threading.Lock()
 
-        for idx, (pdf_path, page_count) in enumerate(file_page_counts):
-            if state['stop_requested']:
-                _log(state, "처리 중지됨")
-                break
+        # One processor for the whole run: its rate limiter is a single global
+        # semaphore, so max_concurrent_requests caps in-flight API calls across
+        # every file at once — files can then run in parallel safely.
+        provider = config_manager.get_provider()
+        if provider == 'openrouter':
+            ai_processor = OpenRouterProcessor(api_key)
+        elif provider == 'openai':
+            ai_processor = OpenAIProcessor(api_key)
+        elif provider == 'gemini':
+            ai_processor = GeminiProcessor(api_key)
+        else:
+            ai_processor = ClaudeProcessor(api_key)
 
+        def _process_one(idx: int, pdf_path: str):
+            """Convert + extract one PDF. Runs on a worker thread."""
             fname = os.path.basename(pdf_path)
-            state['current_file'] = f"PDF 변환 중: {fname} ({idx + 1}/{len(pdf_files)})"
-            _log(state, f"파일 시작: {fname}")
-
+            # Each file rasterises into its own temp dir: a shared one would let
+            # a finishing file delete the images another is still reading.
+            file_temp = os.path.join(folders['temp_folder'], f"f{idx:03d}")
             try:
-                pdf_processor = PDFProcessor(pdf_path, folders['temp_folder'])
+                _log(state, f"파일 시작: {fname}")
+                pdf_processor = PDFProcessor(pdf_path, file_temp)
                 processed_images = pdf_processor.process_pdf()
-                logging.info(f"PDF 변환 완료: {len(processed_images)}개 페이지")
-
-                provider = config_manager.get_provider()
-                if provider == 'openai':
-                    ai_processor = OpenAIProcessor(api_key)
-                elif provider == 'gemini':
-                    ai_processor = GeminiProcessor(api_key)
-                else:
-                    ai_processor = ClaudeProcessor(api_key)
-
-                state['current_file'] = f"AI 처리 중: {fname} ({len(processed_images)}페이지)"
+                logging.info(f"PDF 변환 완료 ({fname}): {len(processed_images)}개 페이지")
 
                 def progress_callback(page_idx, total_pages_in_file, _pp=None):
                     nonlocal processed_pages
-                    processed_pages += 1
+                    with progress_lock:
+                        processed_pages += 1
+                        done = processed_pages
                     if total_pages > 0:
-                        state['progress'] = processed_pages / total_pages
+                        state['progress'] = done / total_pages
                     state['page_detail'] = (
-                        f"{processed_pages} / {total_pages} "
-                        f"페이지 완료 ({state['progress'] * 100:.1f}%)"
+                        f"{done} / {total_pages} 페이지 완료 "
+                        f"({state['progress'] * 100:.1f}%)"
                     )
-                    state['current_file'] = (
-                        f"AI 처리 중: {fname} - "
-                        f"{page_idx + 1}/{total_pages_in_file} 페이지"
-                    )
+                    state['current_file'] = f"AI 처리 중: {fname}"
 
                 survey_data = ai_processor.process_images(
                     processed_images, progress_callback=progress_callback
                 )
 
-                if survey_data:
-                    all_survey_data.extend(survey_data)
-                    state['processed_files'].add(pdf_path)
-                    _log(state, f"완료: {fname} - {len(survey_data)}개 데이터")
-                else:
-                    failed_files.append(fname)
-                    _log(state, f"실패: {fname} - 데이터 추출 없음")
-
+                with progress_lock:
+                    if survey_data:
+                        all_survey_data.extend(survey_data)
+                        state['processed_files'].add(pdf_path)
+                        _log(state, f"완료: {fname} - {len(survey_data)}개 데이터")
+                    else:
+                        failed_files.append(fname)
+                        _log(state, f"실패: {fname} - 데이터 추출 없음")
             except Exception as e:
-                failed_files.append(fname)
+                with progress_lock:
+                    failed_files.append(fname)
                 error_msg = f"오류 ({fname}): {str(e)}"
                 logging.error(error_msg, exc_info=True)
                 _log(state, f"ERROR: {error_msg}")
-
             finally:
-                temp_folder = folders['temp_folder']
-                if os.path.exists(temp_folder):
-                    try:
-                        shutil.rmtree(temp_folder)
-                        os.makedirs(temp_folder)
-                    except PermissionError:
-                        for fn in os.listdir(temp_folder):
-                            fp = os.path.join(temp_folder, fn)
-                            if os.path.isfile(fp):
-                                try:
-                                    os.remove(fp)
-                                except Exception:
-                                    pass
+                shutil.rmtree(file_temp, ignore_errors=True)
+
+        # A batch is usually a handful of PDFs; run them together. The API-call
+        # ceiling stays max_concurrent_requests regardless of this width.
+        max_files = max(1, min(len(file_page_counts), 8))
+        state['current_file'] = f"처리 중: {len(file_page_counts)}개 파일 동시"
+        with ThreadPoolExecutor(max_workers=max_files) as pool:
+            futures = [
+                pool.submit(_process_one, idx, pdf_path)
+                for idx, (pdf_path, _pc) in enumerate(file_page_counts)
+                if not state['stop_requested']
+            ]
+            for future in as_completed(futures):
+                future.result()
+        if state['stop_requested']:
+            _log(state, "처리 중지됨")
 
         # CSV generation
         if all_survey_data and not state['stop_requested']:

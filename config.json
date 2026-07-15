@@ -1,6 +1,7 @@
 {
     "api_settings": {
-        "provider": "gemini",
+        "provider": "openrouter",
+        "openrouter_model": "openai/gpt-5.6-luna",
         "openai_model": "gpt-5-mini",
         "claude_model": "claude-haiku-4-5-20251001",
         "gemini_model": "gemini-3.5-flash",
@@ -17,7 +18,7 @@
         "max_tokens": 2000,
         "temperature": 0.0,
         "concurrent_enabled": true,
-        "max_concurrent_requests": 6
+        "max_concurrent_requests": 24
     },
     "output": {
         "csv_filename": "spine_survey_results.csv",
